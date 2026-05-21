@@ -1,0 +1,7 @@
+{
+  "title": "Data Structures & Algorithms",
+  "slug": "dsa",
+  "description": "Master the fundamentals of Data Structures and Algorithms for coding interviews.",
+  "order": 1,
+  "isActive": true
+}

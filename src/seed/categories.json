@@ -1,0 +1,18 @@
+[
+  {
+    "title": "Arrays & Hashing",
+    "slug": "arrays-hashing",
+    "type": "Topic",
+    "difficulty": "Beginner",
+    "estimatedHours": 10,
+    "order": 1
+  },
+  {
+    "title": "Two Pointers",
+    "slug": "two-pointers",
+    "type": "Topic",
+    "difficulty": "Intermediate",
+    "estimatedHours": 8,
+    "order": 2
+  }
+]

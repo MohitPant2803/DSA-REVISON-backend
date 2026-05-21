@@ -1,0 +1,19 @@
+import { z } from 'zod';
+
+export const createPlaylistSchema = z.object({
+  name: z.string().min(1, 'Playlist name is required'),
+  description: z.string().optional(),
+  color1: z.string().optional(),
+  color2: z.string().optional(),
+});
+
+export const playlistItemActionSchema = z.object({
+  playlistId: z.string().min(1, 'Playlist ID is required'),
+  placardId: z.string().min(1, 'Placard ID is required'),
+});
+
+export const queryPlaylistSchema = z.object({
+  page: z.string().optional(),
+  limit: z.string().optional(),
+  sort: z.string().optional(),
+});

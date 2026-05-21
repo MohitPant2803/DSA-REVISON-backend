@@ -1,0 +1,37 @@
+[
+  {
+    "title": "Two Sum",
+    "slug": "two-sum",
+    "categorySlug": "arrays-hashing",
+    "topic": "Arrays",
+    "difficulty": "Easy",
+    "question": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
+    "tags": ["Array", "Hash Table"],
+    "hints": ["Try using a hash map to store the elements you've seen so far.", "Compute the complement (target - current element) and check if it exists in the hash map."],
+    "walkthrough": [
+      {
+        "stepNumber": 1,
+        "title": "Initialize a Hash Map",
+        "explanation": "Create an empty hash map to store the numbers we've seen and their indices."
+      },
+      {
+        "stepNumber": 2,
+        "title": "Iterate and Check Complement",
+        "explanation": "For each number, compute the complement (target - num). If the complement is in the map, return the indices.",
+        "timeComplexity": "O(N)",
+        "spaceComplexity": "O(N)"
+      }
+    ]
+  },
+  {
+    "title": "Valid Palindrome",
+    "slug": "valid-palindrome",
+    "categorySlug": "two-pointers",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "question": "A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.",
+    "tags": ["Two Pointers", "String"],
+    "hints": ["Use two pointers, one at the start and one at the end of the string."],
+    "walkthrough": []
+  }
+]
