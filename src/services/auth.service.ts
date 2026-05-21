@@ -30,18 +30,19 @@ export const verifyGoogleTokenAndLogin = async (idToken: string): Promise<IUser>
 
   const { sub: googleId, email, name, picture: profilePicture } = payload;
 
+  // 1. Check if user already exists in MongoDB by email
   let user = await User.findOne({ email });
 
   if (user) {
-    if (!user.googleId) {
-      user.googleId = googleId;
-    }
-    const assignedRole = resolveRole(email);
-    if (assignedRole === 'superadmin' && user.role !== 'superadmin') {
-      user.role = 'superadmin';
-    }
-    await user.save();
+    console.log(`[Auth] Existing user found. Opening registered account: ${email}`);
     return user;
+  }
+
+  // 2. If user doesn't exist, create a new User ID and document
+  console.log(`[Auth] No existing user found. Creating new MongoDB document for: ${email}`);
+  const assignedRole = resolveRole(email);
+  if (assignedRole === 'superadmin') {
+    console.log(`[Auth] Role assignment: New user ${email} detected as superadmin.`);
   }
 
   return User.create({
@@ -49,6 +50,7 @@ export const verifyGoogleTokenAndLogin = async (idToken: string): Promise<IUser>
     email,
     name,
     profilePicture,
-    role: resolveRole(email),
+    role: assignedRole,
+    authProvider: 'google',
   });
 };

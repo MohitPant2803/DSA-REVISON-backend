@@ -12,10 +12,16 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
   try {
     const { idToken } = googleAuthSchema.parse(req.body);
 
+    // Service handles the "Create if new / Login if existing" logic
     const user = await verifyGoogleTokenAndLogin(idToken);
-    const token = generateToken({ userId: user._id.toString(), role: user.role });
 
-    return successResponse(res, 200, 'Login successful', { user, token });
+    // Generate session token using the MongoDB _id (persisted either from creation or retrieval)
+    const token = generateToken({ userId: user._id.toString(), role: user.role });
+    
+    const isNewUser = user.createdAt.getTime() === user.updatedAt.getTime();
+    console.log(`[Auth] ${isNewUser ? 'New account created' : 'Existing account opened'} for ${user.email}`);
+
+    return successResponse(res, 200, 'Login successful', { user, token, role: user.role });
   } catch (error: any) {
     // Zod puts its validation details inside the `errors` array
     console.log("Validation errors:", JSON.stringify(error.errors || error, null, 2));

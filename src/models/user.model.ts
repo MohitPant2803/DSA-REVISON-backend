@@ -7,6 +7,7 @@ export interface IUser extends Document {
   email: string;
   profilePicture?: string;
   role: 'user' | 'admin' | 'superadmin';
+  authProvider: string;
   streakCount: number;
   preferences: Record<string, any>;
   lastCompletedDate?: Date;
@@ -26,6 +27,11 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ['user', 'admin', 'superadmin'],
       default: 'user',
+    },
+    authProvider: {
+      type: String,
+      required: true,
+      default: 'google'
     },
     streakCount: { type: Number, default: 0 },
     lastCompletedDate: { type: Date },
