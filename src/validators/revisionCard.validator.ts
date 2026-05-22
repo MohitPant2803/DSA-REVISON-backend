@@ -8,6 +8,14 @@ const optionalUrl = z
     message: 'Invalid URL format',
   });
 
+const slideSchema = z.object({
+  type: z.string().optional(),
+  headline: z.string({ required_error: 'Headline is required' }).min(1, 'Headline is required'),
+  body: z.string().optional(),
+  code: z.string().optional(),
+  blocks: z.array(z.any()).optional().default([]),
+});
+
 const bodySchema = z.object({
   title: z.string({ required_error: 'Title is required' }).min(1, 'Title is required'),
   topic: z.string({ required_error: 'Topic is required' }).min(1, 'Topic is required'),
@@ -23,6 +31,7 @@ const bodySchema = z.object({
   folderId: z.string({ required_error: 'Folder is required' }).min(1, 'Folder is required'),
   visibility: z.enum(['public', 'private']).optional(),
   order: z.number().optional(),
+  slides: z.array(slideSchema).optional(),
 });
 
 export const createRevisionCardSchema = z.object({
@@ -52,6 +61,7 @@ export const queryRevisionCardsSchema = z.object({
     difficulty: z.enum(['Easy', 'Medium', 'Hard']).optional(),
     folderId: z.string().optional(),
     tags: z.string().optional(),
+    excludeSlides: z.string().optional(),
   }),
 });
 

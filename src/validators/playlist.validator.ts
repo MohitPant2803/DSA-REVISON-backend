@@ -7,10 +7,15 @@ export const createPlaylistSchema = z.object({
   color2: z.string().optional(),
 });
 
-export const playlistItemActionSchema = z.object({
-  playlistId: z.string().min(1, 'Playlist ID is required'),
-  placardId: z.string().min(1, 'Placard ID is required'),
-});
+export const playlistItemActionSchema = z
+  .object({
+    playlistId: z.string().min(1, 'Playlist ID is required'),
+    placardId: z.string().min(1).optional(),
+    revisionCardId: z.string().min(1).optional(),
+  })
+  .refine((data) => data.placardId || data.revisionCardId, {
+    message: 'Either placardId or revisionCardId is required',
+  });
 
 export const queryPlaylistSchema = z.object({
   page: z.string().optional(),

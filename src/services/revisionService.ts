@@ -20,10 +20,10 @@ function buildVisibilityFilter(actorRole?: UserRole) {
 }
 
 export const queryRevisionCards = async (
-  query: QueryRevisionCardsInput,
+  query: QueryRevisionCardsInput & { excludeSlides?: string },
   actorRole?: UserRole
 ) => {
-  const { page = '1', limit = '10', sort, search, topic, difficulty, folderId, tags } = query;
+  const { page = '1', limit = '10', sort, search, topic, difficulty, folderId, tags, excludeSlides } = query;
 
   const pageNum = parseInt(page, 10);
   const limitNum = parseInt(limit, 10);
@@ -46,7 +46,10 @@ export const queryRevisionCards = async (
     if (!Types.ObjectId.isValid(folderId)) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
     }
-    filter.folderId = new Types.ObjectId(folderId);
+    // Fetch all child subfolder IDs recursively to support sheet-level and folder-level queries
+    const childFolders = await Folder.find({ parentFolderId: new Types.ObjectId(folderId) }).select('_id');
+    const folderIds = [new Types.ObjectId(folderId), ...childFolders.map((f) => f._id)];
+    filter.folderId = { $in: folderIds };
   }
   if (tags) {
     filter.tags = { $in: tags.split(',').map((t) => t.trim()).filter(Boolean) };
@@ -62,13 +65,19 @@ export const queryRevisionCards = async (
   }
 
   const totalResults = await RevisionCard.countDocuments(filter);
-  const results = await RevisionCard.find(filter)
+  
+  const dbQuery = RevisionCard.find(filter)
     .sort(sortOptions)
     .skip(skip)
     .limit(limitNum)
     .populate(populateCreator)
-    .populate('folderId', 'title icon color')
-    .lean();
+    .populate('folderId', 'title icon color');
+
+  if (excludeSlides === 'true') {
+    dbQuery.select('-slides');
+  }
+
+  const results = await dbQuery.lean();
 
   const totalPages = Math.ceil(totalResults / limitNum);
 

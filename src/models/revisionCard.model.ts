@@ -2,17 +2,15 @@ import mongoose, { Document, Schema, Types, model } from 'mongoose';
 
 export type CardVisibility = 'public' | 'private';
 
-export const COMPLEXITY_LEVELS = [
-  'O(1)',
-  'O(log n)',
-  'O(n)',
-  'O(n log n)',
-  'O(n²)',
-  'O(n³)',
-  'O(2^n)',
-] as const;
+export type Complexity = string;
 
-export type Complexity = (typeof COMPLEXITY_LEVELS)[number];
+export interface ISlide {
+  type?: string;
+  headline: string;
+  body?: string;
+  code?: string;
+  blocks?: Array<any>;
+}
 
 export interface IRevisionCard extends Document {
   title: string;
@@ -28,6 +26,7 @@ export interface IRevisionCard extends Document {
   createdBy: Types.ObjectId;
   visibility: CardVisibility;
   order: number;
+  slides?: ISlide[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,7 +57,6 @@ const RevisionCardSchema = new Schema<IRevisionCard>(
     },
     complexity: {
       type: String,
-      enum: COMPLEXITY_LEVELS,
     },
     examples: { type: [String], default: [] },
     folderId: {
@@ -78,6 +76,18 @@ const RevisionCardSchema = new Schema<IRevisionCard>(
       default: 'public',
     },
     order: { type: Number, default: 0 },
+    slides: {
+      type: [
+        {
+          type: { type: String },
+          headline: { type: String, required: true },
+          body: { type: String },
+          code: { type: String },
+          blocks: { type: [Schema.Types.Mixed], default: [] },
+        },
+      ],
+      default: undefined,
+    },
   },
   {
     timestamps: true,

@@ -22,7 +22,8 @@ export const connectDB = async (retryCount = 0): Promise<void> => {
     
     if (retryCount < MAX_RETRIES) {
       logger.info(`Retrying connection in ${RETRY_DELAY / 1000}s... (Attempt ${retryCount + 1} of ${MAX_RETRIES})`);
-      setTimeout(() => connectDB(retryCount + 1), RETRY_DELAY);
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+      await connectDB(retryCount + 1);
     } else {
       logger.error('❌ Max connection retries reached. Exiting application.');
       process.exit(1);

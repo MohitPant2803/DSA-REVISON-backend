@@ -13,16 +13,17 @@ import { canManageResource, canReadResource, UserRole } from '../utils/permissio
 const populateCreator = { path: 'createdBy', select: 'name email profilePicture role' };
 
 async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[]) {
-  const ids = folders.map((f) => f._id);
-  const counts = await RevisionCard.aggregate([
-    { $match: { folderId: { $in: ids } } },
-    { $group: { _id: '$folderId', count: { $sum: 1 } } },
-  ]);
-  const countMap = new Map(counts.map((c) => [c._id.toString(), c.count as number]));
-  return folders.map((folder) => ({
-    ...folder,
-    cardCount: countMap.get(folder._id.toString()) ?? 0,
-  }));
+  const foldersWithCounts = [];
+  for (const folder of folders) {
+    const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
+    const folderIds = [folder._id, ...childFolders.map((f) => f._id)];
+    const cardCount = await RevisionCard.countDocuments({ folderId: { $in: folderIds } });
+    foldersWithCounts.push({
+      ...folder,
+      cardCount,
+    });
+  }
+  return foldersWithCounts;
 }
 
 function buildVisibilityFilter(actorRole?: UserRole) {
@@ -85,7 +86,9 @@ export const getFolderById = async (folderId: string, actorRole?: UserRole) => {
     throw new ApiError(httpStatus.FORBIDDEN, 'You do not have access to this folder');
   }
 
-  const cardCount = await RevisionCard.countDocuments({ folderId: folder._id });
+  const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
+  const folderIds = [folder._id, ...childFolders.map((f) => f._id)];
+  const cardCount = await RevisionCard.countDocuments({ folderId: { $in: folderIds } });
   return { ...folder, cardCount };
 };
 
