@@ -38,3 +38,13 @@ export const deleteFolderHandler = asyncHandler(async (req: AuthRequest, res: Re
   await folderService.deleteFolderById(req.params.id, req.user!._id, req.user!.role as UserRole);
   res.status(httpStatus.NO_CONTENT).send();
 });
+
+export const reorderFolderCardsHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const folder = await folderService.reorderFolderCards(
+    req.params.id,
+    req.body.cardIds,
+    req.user!._id,
+    req.user!.role as UserRole
+  );
+  res.status(httpStatus.OK).json(folder);
+});

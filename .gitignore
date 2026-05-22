@@ -28,3 +28,13 @@ Thumbs.db
 .idea/
 build/
 dist/
+
+# Test and inspection files
+inspectDb.js
+inspectFavorites.js
+inspectPlaylists.js
+testLibrary.js
+testLibrary.ts
+.md/
+scratch/
+

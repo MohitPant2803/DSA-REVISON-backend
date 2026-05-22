@@ -12,6 +12,8 @@ export const updateProgressSchema = z
     favorite: z.boolean().optional(),
     difficult: z.boolean().optional(),
     archived: z.boolean().optional(),
+    addToPlaylist: z.string().optional(),
+    removeFromPlaylist: z.string().optional(),
   })
   .refine((data) => data.placardId || data.revisionCardId, {
     message: 'Either placardId or revisionCardId is required',

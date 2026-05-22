@@ -5,6 +5,7 @@ import {
   getFolderByIdHandler,
   updateFolderHandler,
   deleteFolderHandler,
+  reorderFolderCardsHandler,
 } from '../controllers/folderController';
 import { validate } from '../middleware/validate';
 import { protect, authorize } from '../middleware/authMiddleware';
@@ -41,6 +42,14 @@ router
     authorize('admin', 'superadmin'),
     validate(folderIdParamSchema),
     deleteFolderHandler
+  );
+
+router
+  .route('/:id/reorder')
+  .put(
+    protect,
+    authorize('admin', 'superadmin'),
+    reorderFolderCardsHandler
   );
 
 export default router;

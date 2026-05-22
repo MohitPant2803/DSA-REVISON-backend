@@ -6,9 +6,10 @@ import {
   getCardsByFolderHandler,
   updateRevisionCardHandler,
   deleteRevisionCardHandler,
+  getRevisionCardsByIdsHandler,
 } from '../controllers/revisionController';
 import { validate } from '../middleware/validate';
-import { protect, authorize } from '../middleware/authMiddleware';
+import { protect, authorize, optionalProtect } from '../middleware/authMiddleware';
 import {
   createRevisionCardSchema,
   updateRevisionCardSchema,
@@ -22,13 +23,15 @@ const router = Router();
 router
   .route('/')
   .post(protect, authorize('admin', 'superadmin'), validate(createRevisionCardSchema), createRevisionCardHandler)
-  .get(validate(queryRevisionCardsSchema), getRevisionCardsHandler);
+  .get(optionalProtect, validate(queryRevisionCardsSchema), getRevisionCardsHandler);
 
-router.get('/folder/:folderId', validate(folderCardsQuerySchema), getCardsByFolderHandler);
+router.post('/batch', optionalProtect, getRevisionCardsByIdsHandler);
+
+router.get('/folder/:folderId', optionalProtect, validate(folderCardsQuerySchema), getCardsByFolderHandler);
 
 router
   .route('/:id')
-  .get(validate(revisionCardIdParamSchema), getRevisionCardByIdHandler)
+  .get(optionalProtect, validate(revisionCardIdParamSchema), getRevisionCardByIdHandler)
   .put(protect, authorize('admin', 'superadmin'), validate(updateRevisionCardSchema), updateRevisionCardHandler)
   .delete(
     protect,

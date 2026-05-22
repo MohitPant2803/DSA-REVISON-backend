@@ -13,6 +13,7 @@ export interface IFolder extends Document {
   roleAccess: RoleAccess[];
   order: number;
   parentFolderId?: Types.ObjectId | null;
+  cardIds: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +48,10 @@ const FolderSchema = new Schema<IFolder>(
       type: Schema.Types.ObjectId,
       ref: 'Folder',
       default: null,
+    },
+    cardIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
+      default: [],
     },
   },
   { timestamps: true, versionKey: false }

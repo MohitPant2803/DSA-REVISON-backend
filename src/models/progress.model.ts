@@ -18,6 +18,7 @@ export interface IProgress extends Document {
   favorite?: boolean;
   difficult?: boolean;
   archived?: boolean;
+  playlists?: mongoose.Types.ObjectId[];
 }
 
 const ProgressSchema = new Schema<IProgress>(
@@ -39,14 +40,21 @@ const ProgressSchema = new Schema<IProgress>(
     favorite: { type: Boolean, default: false },
     difficult: { type: Boolean, default: false },
     archived: { type: Boolean, default: false },
+    playlists: [{ type: Schema.Types.ObjectId, ref: 'Playlist' }],
   },
   {
     timestamps: true,
   }
 );
 
-ProgressSchema.index({ userId: 1, placardId: 1 }, { unique: true, sparse: true });
-ProgressSchema.index({ userId: 1, revisionCardId: 1 }, { unique: true, sparse: true });
+ProgressSchema.index(
+  { userId: 1, placardId: 1 }, 
+  { unique: true, partialFilterExpression: { placardId: { $exists: true, $type: 'objectId' } } }
+);
+ProgressSchema.index(
+  { userId: 1, revisionCardId: 1 }, 
+  { unique: true, partialFilterExpression: { revisionCardId: { $exists: true, $type: 'objectId' } } }
+);
 
 // Index for fetching all of a user's progress, sorted by recent views
 ProgressSchema.index({ userId: 1, lastViewedAt: -1 });

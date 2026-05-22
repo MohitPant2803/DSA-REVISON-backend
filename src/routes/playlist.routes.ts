@@ -12,5 +12,6 @@ router.get('/:id', getPlaylistById);
 router.delete('/:id', deletePlaylist);
 router.post('/add', addPlacard);
 router.post('/remove', removePlacard);
+router.post('/:id/reorder', require('../controllers/playlist.controller').reorderPlaylist);
 
 export default router;

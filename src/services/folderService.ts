@@ -164,3 +164,28 @@ export const deleteFolderById = async (
   await RevisionCard.deleteMany({ folderId: folder._id });
   await folder.deleteOne();
 };
+
+export const reorderFolderCards = async (
+  folderId: string,
+  cardIds: string[],
+  userId: Types.ObjectId,
+  userRole: UserRole
+): Promise<IFolder> => {
+  if (!Types.ObjectId.isValid(folderId)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
+  }
+
+  const folder = await Folder.findById(folderId);
+  if (!folder) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Folder not found');
+  }
+
+  const allowed = await canManageResource(userId, userRole, folder.createdBy);
+  if (!allowed) {
+    throw new ApiError(httpStatus.FORBIDDEN, 'You are not authorized to reorder cards in this folder');
+  }
+
+  folder.cardIds = cardIds.map(id => new Types.ObjectId(id));
+  await folder.save();
+  return folder;
+};

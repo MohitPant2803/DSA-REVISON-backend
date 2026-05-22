@@ -17,6 +17,27 @@ export const connectDB = async (retryCount = 0): Promise<void> => {
     logger.info('Attempting to connect to MongoDB...');
     const conn = await mongoose.connect(env.MONGO_URI);
     logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
+
+    // Clean drop of legacy indexes to avoid compound index sparse duplicate bugs
+    try {
+      const db = conn.connection.db;
+      if (db) {
+        const collection = db.collection('playlistitems');
+        const indexes = await collection.indexes();
+        for (const idx of indexes) {
+          if (idx.name === 'playlistId_1_placardId_1' && !idx.partialFilterExpression) {
+            logger.info('Dropping legacy sparse index: playlistId_1_placardId_1');
+            await collection.dropIndex('playlistId_1_placardId_1');
+          }
+          if (idx.name === 'playlistId_1_revisionCardId_1' && !idx.partialFilterExpression) {
+            logger.info('Dropping legacy sparse index: playlistId_1_revisionCardId_1');
+            await collection.dropIndex('playlistId_1_revisionCardId_1');
+          }
+        }
+      }
+    } catch (indexErr: any) {
+      logger.info(`⚠️ MongoDB Index repair info: ${indexErr.message}`);
+    }
   } catch (error: any) {
     logger.error(`❌ Error connecting to MongoDB: ${error.message}`);
     

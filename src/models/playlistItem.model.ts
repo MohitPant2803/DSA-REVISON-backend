@@ -27,8 +27,14 @@ PlaylistItemSchema.pre('validate', function (next) {
   }
 });
 
-PlaylistItemSchema.index({ playlistId: 1, placardId: 1 }, { unique: true, sparse: true });
-PlaylistItemSchema.index({ playlistId: 1, revisionCardId: 1 }, { unique: true, sparse: true });
+PlaylistItemSchema.index(
+  { playlistId: 1, placardId: 1 },
+  { unique: true, partialFilterExpression: { placardId: { $exists: true } } }
+);
+PlaylistItemSchema.index(
+  { playlistId: 1, revisionCardId: 1 },
+  { unique: true, partialFilterExpression: { revisionCardId: { $exists: true } } }
+);
 PlaylistItemSchema.index({ playlistId: 1, addedAt: -1 });
 
 export default mongoose.model<IPlaylistItem>('PlaylistItem', PlaylistItemSchema);

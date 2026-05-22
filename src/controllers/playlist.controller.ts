@@ -27,8 +27,7 @@ export const getPlaylists = asyncHandler(async (req: AuthRequest, res: Response)
 });
 
 export const getPlaylistById = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const queryParams = queryPlaylistSchema.parse(req.query);
-  const result = await getPlaylistByIdService(req.params.id, req.user!._id.toString(), queryParams);
+  const result = await getPlaylistByIdService(req.params.id, req.user!._id.toString());
 
   if (!result) return errorResponse(res, 404, 'Playlist not found');
   return successResponse(res, 200, 'Playlist fetched successfully', result);
@@ -41,12 +40,19 @@ export const deletePlaylist = asyncHandler(async (req: AuthRequest, res: Respons
 });
 
 export const addPlacard = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { playlistId, placardId, revisionCardId } = playlistItemActionSchema.parse(req.body);
-  await addItemToPlaylistService(playlistId, req.user!._id.toString(), {
-    placardId,
-    revisionCardId,
-  });
-  return successResponse(res, 200, 'Item added to playlist');
+  try {
+    const { playlistId, placardId, revisionCardId } = playlistItemActionSchema.parse(req.body);
+    await addItemToPlaylistService(playlistId, req.user!._id.toString(), {
+      placardId,
+      revisionCardId,
+    });
+    return successResponse(res, 200, 'Item added to playlist');
+  } catch (error: any) {
+    if (error.message === 'Item already exists in playlist') {
+      return errorResponse(res, 400, error.message);
+    }
+    throw error;
+  }
 });
 
 export const removePlacard = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -57,4 +63,17 @@ export const removePlacard = asyncHandler(async (req: AuthRequest, res: Response
   });
   if (!result) return errorResponse(res, 404, 'Item not found in playlist');
   return successResponse(res, 200, 'Item removed from playlist');
+});
+
+export const reorderPlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { cardIds } = req.body;
+  const { id } = req.params;
+  
+  if (!Array.isArray(cardIds)) {
+    return errorResponse(res, 400, 'cardIds must be an array of strings');
+  }
+
+  const { reorderPlaylistService } = require('../services/playlist.service');
+  const playlist = await reorderPlaylistService(id, req.user!._id.toString(), cardIds);
+  return successResponse(res, 200, 'Playlist reordered successfully', { playlist });
 });

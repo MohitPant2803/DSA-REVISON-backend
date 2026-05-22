@@ -6,6 +6,11 @@ import {
   updateProgressService,
   getDashboardStatsService,
   getPersonalLibraryService,
+  registerLoopService,
+  getFolderLoopsService,
+  updateResumeStateService,
+  getResumeStateService,
+  reorderLikesService,
 } from '../services/progress.service';
 import { AuthRequest } from '../middleware/authMiddleware';
 
@@ -23,4 +28,44 @@ export const getMyStats = asyncHandler(async (req: AuthRequest, res: Response) =
 export const getPersonalLibrary = asyncHandler(async (req: AuthRequest, res: Response) => {
   const library = await getPersonalLibraryService(req.user!._id.toString());
   successResponse(res, 200, 'Personal library fetched', { library });
+});
+
+export const registerLoop = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { type, id, cardsViewed } = req.body;
+  if (!type || !id || typeof cardsViewed !== 'number') {
+    res.status(400);
+    throw new Error('Invalid request payload for loop registration');
+  }
+  const loopStats = await registerLoopService(req.user!._id.toString(), type as any, id, cardsViewed);
+  successResponse(res, 200, 'Loop registered successfully', { loopStats });
+});
+
+export const getFolderLoops = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const loops = await getFolderLoopsService(req.user!._id.toString());
+  successResponse(res, 200, 'Folder loops fetched successfully', { loops });
+});
+
+export const updateResumeState = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { type, id, resumeData } = req.body;
+  if (!type || !id || !resumeData) {
+    res.status(400);
+    throw new Error('Invalid request payload for resume state update');
+  }
+  const result = await updateResumeStateService(req.user!._id.toString(), type as any, id, resumeData);
+  successResponse(res, 200, 'Resume state updated successfully', { result });
+});
+
+export const getResumeStates = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const states = await getResumeStateService(req.user!._id.toString());
+  successResponse(res, 200, 'Resume states fetched successfully', { states });
+});
+
+export const reorderLikes = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { cardIds } = req.body;
+  if (!Array.isArray(cardIds)) {
+    res.status(400);
+    throw new Error('cardIds must be an array of strings');
+  }
+  await reorderLikesService(req.user!._id.toString(), cardIds);
+  successResponse(res, 200, 'Likes reordered successfully');
 });

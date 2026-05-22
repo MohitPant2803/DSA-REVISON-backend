@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import RevisionCard, { IRevisionCard } from '../models/revisionCard.model';
 import Folder from '../models/folder.model';
+import Progress from '../models/progress.model';
 import {
   CreateRevisionCardInput,
   QueryRevisionCardsInput,
@@ -21,7 +22,8 @@ function buildVisibilityFilter(actorRole?: UserRole) {
 
 export const queryRevisionCards = async (
   query: QueryRevisionCardsInput & { excludeSlides?: string },
-  actorRole?: UserRole
+  actorRole?: UserRole,
+  userId?: string
 ) => {
   const { page = '1', limit = '10', sort, search, topic, difficulty, folderId, tags, excludeSlides } = query;
 
@@ -79,6 +81,28 @@ export const queryRevisionCards = async (
 
   const results = await dbQuery.lean();
 
+  if (userId) {
+    const cardIds = results.map((r) => r._id);
+    const progressList = await Progress.find({
+      userId: new Types.ObjectId(userId),
+      revisionCardId: { $in: cardIds },
+    }).lean();
+
+    const progressMap = new Map(progressList.map((p: any) => [p.revisionCardId?.toString(), p]));
+    results.forEach((card: any) => {
+      const prog = progressMap.get(card._id.toString());
+      card.isFavorite = prog ? !!prog.favorite : false;
+      card.isDifficult = prog ? !!prog.difficult : false;
+      card.isArchived = prog ? !!prog.archived : false;
+    });
+  } else {
+    results.forEach((card: any) => {
+      card.isFavorite = false;
+      card.isDifficult = false;
+      card.isArchived = false;
+    });
+  }
+
   const totalPages = Math.ceil(totalResults / limitNum);
 
   return {
@@ -90,7 +114,7 @@ export const queryRevisionCards = async (
   };
 };
 
-export const getRevisionCardById = async (cardId: string, actorRole?: UserRole) => {
+export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, userId?: string) => {
   if (!Types.ObjectId.isValid(cardId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid card ID');
   }
@@ -98,7 +122,7 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole) 
   const card = await RevisionCard.findById(cardId)
     .populate(populateCreator)
     .populate('folderId', 'title icon color')
-    .lean();
+    .lean() as any;
 
   if (!card) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Revision card not found');
@@ -106,6 +130,20 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole) 
 
   if (!canReadResource(card.visibility, actorRole)) {
     throw new ApiError(httpStatus.FORBIDDEN, 'You do not have access to this card');
+  }
+
+  if (userId) {
+    const prog = await Progress.findOne({
+      userId: new Types.ObjectId(userId),
+      revisionCardId: card._id,
+    }).lean();
+    card.isFavorite = prog ? !!prog.favorite : false;
+    card.isDifficult = prog ? !!prog.difficult : false;
+    card.isArchived = prog ? !!prog.archived : false;
+  } else {
+    card.isFavorite = false;
+    card.isDifficult = false;
+    card.isArchived = false;
   }
 
   return card;
@@ -129,6 +167,13 @@ export const createRevisionCard = async (
     folderId: new Types.ObjectId(cardData.folderId),
     createdBy: userId,
   });
+
+  // Append new card's ID to parent folder's cardIds
+  if (!folder.cardIds) {
+    folder.cardIds = [];
+  }
+  folder.cardIds.push(card._id);
+  await folder.save();
 
   await card.populate(populateCreator);
   return card;
@@ -162,7 +207,15 @@ export const updateRevisionCardById = async (
     if (!folder) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Folder not found');
     }
+    const oldFolderId = card.folderId;
     card.folderId = new Types.ObjectId(updateData.folderId);
+
+    // If moving folders, pull cardId from old folder and push to new folder
+    if (oldFolderId && oldFolderId.toString() !== updateData.folderId.toString()) {
+      await Folder.findByIdAndUpdate(oldFolderId, { $pull: { cardIds: card._id } });
+      await Folder.findByIdAndUpdate(updateData.folderId, { $addToSet: { cardIds: card._id } });
+    }
+
     delete updateData.folderId;
   }
 
@@ -190,13 +243,66 @@ export const deleteRevisionCardById = async (
     throw new ApiError(httpStatus.FORBIDDEN, 'You are not authorized to delete this card');
   }
 
+  const folderId = card.folderId;
   await card.deleteOne();
+
+  // Remove card ID from parent folder
+  if (folderId) {
+    await Folder.findByIdAndUpdate(folderId, { $pull: { cardIds: card._id } });
+  }
 };
 
 export const getCardsByFolder = async (
   folderId: string,
   query: QueryRevisionCardsInput,
-  actorRole?: UserRole
+  actorRole?: UserRole,
+  userId?: string
 ) => {
-  return queryRevisionCards({ ...query, folderId }, actorRole);
+  return queryRevisionCards({ ...query, folderId }, actorRole, userId);
+};
+
+export const getRevisionCardsByIds = async (
+  cardIds: string[],
+  actorRole?: UserRole,
+  userId?: string
+) => {
+  const validIds = cardIds.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+  if (validIds.length === 0) return [];
+
+  const filter = {
+    _id: { $in: validIds },
+    ...buildVisibilityFilter(actorRole),
+  };
+
+  const cards = await RevisionCard.find(filter)
+    .populate(populateCreator)
+    .populate('folderId', 'title icon color')
+    .lean() as any[];
+
+  if (userId && cards.length > 0) {
+    const progressList = await Progress.find({
+      userId: new Types.ObjectId(userId),
+      revisionCardId: { $in: validIds },
+    }).lean();
+
+    const progressMap = new Map(progressList.map((p: any) => [p.revisionCardId?.toString(), p]));
+    cards.forEach((card: any) => {
+      const prog = progressMap.get(card._id.toString());
+      card.isFavorite = prog ? !!prog.favorite : false;
+      card.isDifficult = prog ? !!prog.difficult : false;
+      card.isArchived = prog ? !!prog.archived : false;
+    });
+  } else {
+    cards.forEach((card: any) => {
+      card.isFavorite = false;
+      card.isDifficult = false;
+      card.isArchived = false;
+    });
+  }
+
+  // Preserve ordering of input cardIds
+  const cardsMap = new Map(cards.map((c) => [c._id.toString(), c]));
+  return cardIds
+    .map((id) => cardsMap.get(id))
+    .filter(Boolean);
 };

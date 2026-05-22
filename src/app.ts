@@ -17,6 +17,8 @@ import bookmarkRoutes from './routes/bookmark.routes';
 import progressRoutes from './routes/progress.routes';
 import revisionRoutes from './routes/revision.routes';
 import folderRoutes from './routes/folder.routes';
+import userCardStateRoutes from './routes/userCardState.routes';
+import sessionQueueRoutes from './routes/sessionQueue.routes';
 
 const app: Application = express();
 
@@ -44,7 +46,8 @@ const limiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
 });
-app.use('/api', limiter);
+// Temporarily disabled for local development to prevent 429 errors from hot-reloads
+// app.use('/api', limiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -60,6 +63,8 @@ app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/revisions', revisionRoutes);
 app.use('/api/folders', folderRoutes);
+app.use('/api/user-card-states', userCardStateRoutes);
+app.use('/api/sessions', sessionQueueRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use(notFound);

@@ -50,3 +50,33 @@ export const authorize = (...roles: string[]) => {
     next();
   };
 };
+
+export const optionalProtect = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  let token;
+
+  // 1. Client sends via Authorization Header
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  } 
+  // 2. Client sends via Cookies
+  else if (req.headers.cookie) {
+    const tokenCookie = req.headers.cookie.split('; ').find(row => row.startsWith('token='));
+    if (tokenCookie) {
+      token = tokenCookie.split('=')[1];
+    }
+  }
+
+  if (token) {
+    try {
+      const decoded = verifyToken(token);
+      const user = await User.findById(decoded.userId).select('-__v');
+      if (user) {
+        req.user = user;
+      }
+    } catch (error) {
+      // Ignore validation failures in optional protect
+      console.warn('Optional auth token validation failed:', error);
+    }
+  }
+  next();
+});

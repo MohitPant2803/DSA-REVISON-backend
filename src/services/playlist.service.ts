@@ -1,51 +1,34 @@
+import mongoose from 'mongoose';
 import Playlist, { IPlaylist } from '../models/playlist.model';
-import PlaylistItem from '../models/playlistItem.model';
+import RevisionCard from '../models/revisionCard.model';
 
 export const createPlaylistService = async (userId: string, data: any): Promise<IPlaylist> => {
-  return Playlist.create({ ...data, userId });
+  return Playlist.create({ ...data, userId, cardIds: [] });
 };
 
-export const getUserPlaylistsService = async (userId: string) => {
+export const getUserPlaylistsService = async (userId: string): Promise<any[]> => {
   return Playlist.find({ userId }).sort('-updatedAt').lean();
 };
 
-export const getPlaylistByIdService = async (playlistId: string, userId: string, query: any) => {
+export const getPlaylistByIdService = async (playlistId: string, userId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(playlistId)) {
+    return null;
+  }
+
   const playlist = await Playlist.findOne({ _id: playlistId, userId }).lean();
   if (!playlist) return null;
 
-  const page = parseInt(query.page || '1', 10);
-  const limit = Math.min(parseInt(query.limit || '100', 10), 200);
-  const skip = (page - 1) * limit;
-
-  const itemDocs = await PlaylistItem.find({ playlistId })
-    .sort('-addedAt')
-    .skip(skip)
-    .limit(limit)
-    .lean();
-
-  const total = await PlaylistItem.countDocuments({ playlistId });
-
-  const cardIds = itemDocs
-    .map((i) => i.revisionCardId?.toString() || i.placardId?.toString())
-    .filter(Boolean);
+  const cardIds = playlist.cardIds || [];
 
   return {
     playlist,
     cardIds,
     items: cardIds,
-    pagination: {
-      total,
-      page,
-      pages: Math.ceil(total / limit) || 1,
-    },
   };
 };
 
-export const deletePlaylistService = async (playlistId: string, userId: string) => {
+export const deletePlaylistService = async (playlistId: string, userId: string): Promise<boolean> => {
   const result = await Playlist.findOneAndDelete({ _id: playlistId, userId });
-  if (result) {
-    PlaylistItem.deleteMany({ playlistId }).exec();
-  }
   return !!result;
 };
 
@@ -53,47 +36,53 @@ export const addItemToPlaylistService = async (
   playlistId: string,
   userId: string,
   opts: { placardId?: string; revisionCardId?: string }
-) => {
+): Promise<boolean> => {
   const playlist = await Playlist.findOne({ _id: playlistId, userId });
   if (!playlist) throw new Error('Playlist not found or unauthorized');
 
-  const payload: Record<string, unknown> = { playlistId };
-  if (opts.revisionCardId) payload.revisionCardId = opts.revisionCardId;
-  else if (opts.placardId) payload.placardId = opts.placardId;
-  else throw new Error('Either placardId or revisionCardId is required');
+  const cardIdStr = opts.revisionCardId || opts.placardId;
+  if (!cardIdStr) throw new Error('Either placardId or revisionCardId is required');
 
-  try {
-    await PlaylistItem.create(payload);
-    playlist.itemCount += 1;
-    await playlist.save();
-    return true;
-  } catch (error: any) {
-    if (error.code === 11000) {
-      throw new Error('Item already exists in playlist');
-    }
-    throw error;
+  if (!playlist.cardIds) {
+    playlist.cardIds = [];
   }
+
+  const alreadyExists = playlist.cardIds.some((id) => id.toString() === cardIdStr);
+  if (alreadyExists) {
+    throw new Error('Item already exists in playlist');
+  }
+
+  playlist.cardIds.push(new mongoose.Types.ObjectId(cardIdStr));
+  playlist.itemCount = playlist.cardIds.length;
+  await playlist.save();
+  return true;
 };
 
 export const removeItemFromPlaylistService = async (
   playlistId: string,
   userId: string,
   opts: { placardId?: string; revisionCardId?: string }
-) => {
+): Promise<boolean> => {
   const playlist = await Playlist.findOne({ _id: playlistId, userId });
   if (!playlist) throw new Error('Playlist not found or unauthorized');
 
-  const filter: Record<string, unknown> = { playlistId };
-  if (opts.revisionCardId) filter.revisionCardId = opts.revisionCardId;
-  else if (opts.placardId) filter.placardId = opts.placardId;
-  else return false;
+  const cardIdStr = opts.revisionCardId || opts.placardId;
+  if (!cardIdStr) return false;
 
-  const result = await PlaylistItem.findOneAndDelete(filter);
-  if (result) {
-    playlist.itemCount = Math.max(0, playlist.itemCount - 1);
-    await playlist.save();
+  if (!playlist.cardIds) {
+    return false;
   }
-  return !!result;
+
+  const lengthBefore = playlist.cardIds.length;
+  playlist.cardIds = playlist.cardIds.filter((id) => id.toString() !== cardIdStr);
+
+  if (playlist.cardIds.length !== lengthBefore) {
+    playlist.itemCount = playlist.cardIds.length;
+    await playlist.save();
+    return true;
+  }
+
+  return false;
 };
 
 /** @deprecated use addItemToPlaylistService */
@@ -109,3 +98,13 @@ export const removePlacardFromPlaylistService = async (
   placardId: string,
   userId: string
 ) => removeItemFromPlaylistService(playlistId, userId, { revisionCardId: placardId });
+
+export const reorderPlaylistService = async (playlistId: string, userId: string, cardIds: string[]) => {
+  const playlist = await Playlist.findOne({ _id: playlistId, userId });
+  if (!playlist) throw new Error('Playlist not found or unauthorized');
+
+  playlist.cardIds = cardIds.map((id) => new mongoose.Types.ObjectId(id));
+  playlist.customOrderUpdatedAt = new Date();
+  await playlist.save();
+  return playlist;
+};
