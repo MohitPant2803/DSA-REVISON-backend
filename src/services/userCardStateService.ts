@@ -3,20 +3,30 @@ import UserCardState, { IUserCardState } from '../models/userCardState.model';
 import RevisionCard from '../models/revisionCard.model';
 
 export const getUserCardState = async (userId: string, cardId: string): Promise<IUserCardState> => {
-  let state = await UserCardState.findOne({
-    userId: new Types.ObjectId(userId),
-    cardId: new Types.ObjectId(cardId),
-  });
+  const uid = new Types.ObjectId(userId);
+  const cid = new Types.ObjectId(cardId);
 
-  if (!state) {
-    state = await UserCardState.create({
-      userId: new Types.ObjectId(userId),
-      cardId: new Types.ObjectId(cardId),
-    });
+  try {
+    // Use findOneAndUpdate with upsert to handle concurrent insertions atomically
+    const state = await UserCardState.findOneAndUpdate(
+      { userId: uid, cardId: cid },
+      { $setOnInsert: { userId: uid, cardId: cid } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    if (state) return state;
+  } catch (err: any) {
+    // If a duplicate key error (code 11000) is thrown, the document was just inserted concurrently.
+    // We can safely find and return it.
+    if (err.code === 11000) {
+      const state = await UserCardState.findOne({ userId: uid, cardId: cid });
+      if (state) return state as IUserCardState;
+    }
+    throw err;
   }
 
-  return state;
+  throw new Error('Failed to retrieve or create user card state');
 };
+
 
 export const toggleLike = async (userId: string, cardId: string): Promise<IUserCardState> => {
   const state = await getUserCardState(userId, cardId);
