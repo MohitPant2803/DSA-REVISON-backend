@@ -2,17 +2,19 @@ import mongoose from 'mongoose';
 import Playlist, { IPlaylist } from '../models/playlist.model';
 import RevisionCard from '../models/revisionCard.model';
 import Progress from '../models/progress.model';
+import UserQuestionProgress from '../models/userQuestionProgress.model';
 
 export const createPlaylistService = async (userId: string, data: any): Promise<IPlaylist> => {
   return Playlist.create({ ...data, userId, cardIds: [] });
 };
 
 export const getUserPlaylistsService = async (userId: string): Promise<any[]> => {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
   const [easyCount, mediumCount, hardCount, skippedCount, customPlaylists] = await Promise.all([
-    Progress.countDocuments({ userId: new mongoose.Types.ObjectId(userId), difficultyState: 'easy' }),
-    Progress.countDocuments({ userId: new mongoose.Types.ObjectId(userId), difficultyState: 'medium' }),
-    Progress.countDocuments({ userId: new mongoose.Types.ObjectId(userId), difficultyState: 'hard' }),
-    Progress.countDocuments({ userId: new mongoose.Types.ObjectId(userId), difficultyState: 'skipped' }),
+    UserQuestionProgress.countDocuments({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'easy' }),
+    UserQuestionProgress.countDocuments({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'medium' }),
+    UserQuestionProgress.countDocuments({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'hard' }),
+    UserQuestionProgress.countDocuments({ userId: userObjectId, attemptStatus: 'skipped' }),
     Playlist.find({ userId }).sort('-updatedAt').lean(),
   ]);
 
@@ -76,12 +78,18 @@ export const getUserPlaylistsService = async (userId: string): Promise<any[]> =>
 
 export const getPlaylistByIdService = async (playlistId: string, userId: string) => {
   if (['easy', 'medium', 'hard', 'skipped'].includes(playlistId)) {
-    const progressRecords = await Progress.find({
-      userId: new mongoose.Types.ObjectId(userId),
-      difficultyState: playlistId,
-    })
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const filterQuery: any = { userId: userObjectId };
+    if (playlistId === 'skipped') {
+      filterQuery.attemptStatus = 'skipped';
+    } else {
+      filterQuery.attemptStatus = 'attempted';
+      filterQuery.perceivedDifficultyByUser = playlistId;
+    }
+
+    const progressRecords = await UserQuestionProgress.find(filterQuery)
       .populate({
-        path: 'revisionCardId',
+        path: 'questionId',
         select: 'title topic difficulty complexity tags explanation code image examples folderId',
         populate: { path: 'folderId', select: 'title icon color' },
       })
@@ -89,8 +97,22 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
       .lean();
 
     const cards = progressRecords
-      .map((p: any) => p.revisionCardId)
+      .map((p: any) => p.questionId)
       .filter((c: any) => c && c._id);
+
+    cards.forEach((card: any) => {
+      const matchingRecord = progressRecords.find(
+        (p) => p.questionId && p.questionId._id.toString() === card._id.toString()
+      );
+      if (matchingRecord) {
+        card.currentUserQuestionProgress = {
+          attemptStatus: matchingRecord.attemptStatus,
+          perceivedDifficultyByUser: matchingRecord.perceivedDifficultyByUser,
+        };
+      } else {
+        card.currentUserQuestionProgress = null;
+      }
+    });
 
     const cardIds = cards.map((c: any) => c._id.toString());
 

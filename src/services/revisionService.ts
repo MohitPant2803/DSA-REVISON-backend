@@ -4,6 +4,7 @@ import RevisionCard, { IRevisionCard } from '../models/revisionCard.model';
 import Folder from '../models/folder.model';
 import Progress from '../models/progress.model';
 import UserCardState from '../models/userCardState.model';
+import UserQuestionProgress from '../models/userQuestionProgress.model';
 import {
   CreateRevisionCardInput,
   QueryRevisionCardsInput,
@@ -26,7 +27,7 @@ export const queryRevisionCards = async (
   actorRole?: UserRole,
   userId?: string
 ) => {
-  const { page = '1', limit = '10', sort, search, topic, difficulty, folderId, tags, excludeSlides } = query;
+  const { page = '1', limit = '10', sort, search, topic, difficulty, folderId, tags, excludeSlides, userDifficultyStates } = query;
 
   const pageNum = parseInt(page, 10);
   const limitNum = parseInt(limit, 10);
@@ -58,6 +59,54 @@ export const queryRevisionCards = async (
     filter.tags = { $in: tags.split(',').map((t) => t.trim()).filter(Boolean) };
   }
 
+  // Personalized difficulty & attempt multi-filtering (OR-logic subquery)
+  if (userId && userDifficultyStates) {
+    const states = userDifficultyStates
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (states.length > 0) {
+      const userObjectId = new Types.ObjectId(userId);
+      const allUserProgress = await UserQuestionProgress.find({ userId: userObjectId })
+        .select('questionId attemptStatus perceivedDifficultyByUser')
+        .lean();
+
+      const attemptedQuestionIds = allUserProgress.map((p) => p.questionId.toString());
+      const matchedQuestionIds = allUserProgress
+        .filter((p) => {
+          if (p.attemptStatus === 'skipped' && states.includes('skipped')) {
+            return true;
+          }
+          if (
+            p.attemptStatus === 'attempted' &&
+            p.perceivedDifficultyByUser &&
+            states.includes(p.perceivedDifficultyByUser.toLowerCase())
+          ) {
+            return true;
+          }
+          return false;
+        })
+        .map((p) => p.questionId.toString());
+
+      const orConditions: any[] = [];
+
+      if (states.includes('unattempted')) {
+        orConditions.push({ _id: { $nin: attemptedQuestionIds.map((id) => new Types.ObjectId(id)) } });
+      }
+
+      if (matchedQuestionIds.length > 0) {
+        orConditions.push({ _id: { $in: matchedQuestionIds.map((id) => new Types.ObjectId(id)) } });
+      }
+
+      if (orConditions.length > 0) {
+        filter.$or = orConditions;
+      } else {
+        filter._id = new Types.ObjectId();
+      }
+    }
+  }
+
   const sortOptions: Record<string, 1 | -1> = {};
   if (sort) {
     const [key, order] = sort.split(':');
@@ -84,7 +133,7 @@ export const queryRevisionCards = async (
 
   if (userId) {
     const cardIds = results.map((r) => r._id);
-    const [progressList, userStates] = await Promise.all([
+    const [progressList, userStates, questionProgressList] = await Promise.all([
       Progress.find({
         userId: new Types.ObjectId(userId),
         revisionCardId: { $in: cardIds },
@@ -92,20 +141,32 @@ export const queryRevisionCards = async (
       UserCardState.find({
         userId: new Types.ObjectId(userId),
         cardId: { $in: cardIds },
-      }).lean()
+      }).lean(),
+      UserQuestionProgress.find({
+        userId: new Types.ObjectId(userId),
+        questionId: { $in: cardIds },
+      }).lean(),
     ]);
 
     const progressMap = new Map(progressList.map((p: any) => [p.revisionCardId?.toString(), p]));
     const statesMap = new Map(userStates.map((s: any) => [s.cardId?.toString(), s]));
+    const qProgressMap = new Map(questionProgressList.map((qp: any) => [qp.questionId?.toString(), qp]));
 
     results.forEach((card: any) => {
       const prog = progressMap.get(card._id.toString());
       const state = statesMap.get(card._id.toString());
+      const qp = qProgressMap.get(card._id.toString());
       card.isFavorite = prog ? !!prog.favorite : false;
       card.isDifficult = prog ? !!prog.difficult : false;
       card.isArchived = prog ? !!prog.archived : false;
       card.difficultyState = prog ? (prog.difficultyState || null) : null;
       card.revisionCount = state ? (state.revisionCount || 0) : 0;
+      card.currentUserQuestionProgress = qp
+        ? {
+            attemptStatus: qp.attemptStatus,
+            perceivedDifficultyByUser: qp.perceivedDifficultyByUser,
+          }
+        : null;
     });
   } else {
     results.forEach((card: any) => {
@@ -114,6 +175,7 @@ export const queryRevisionCards = async (
       card.isArchived = false;
       card.difficultyState = null;
       card.revisionCount = 0;
+      card.currentUserQuestionProgress = null;
     });
   }
 
@@ -147,7 +209,7 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, 
   }
 
   if (userId) {
-    const [prog, state] = await Promise.all([
+    const [prog, state, qp] = await Promise.all([
       Progress.findOne({
         userId: new Types.ObjectId(userId),
         revisionCardId: card._id,
@@ -155,19 +217,30 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, 
       UserCardState.findOne({
         userId: new Types.ObjectId(userId),
         cardId: card._id,
-      }).lean()
+      }).lean(),
+      UserQuestionProgress.findOne({
+        userId: new Types.ObjectId(userId),
+        questionId: card._id,
+      }).lean(),
     ]);
     card.isFavorite = prog ? !!prog.favorite : false;
     card.isDifficult = prog ? !!prog.difficult : false;
     card.isArchived = prog ? !!prog.archived : false;
     card.difficultyState = prog ? (prog.difficultyState || null) : null;
     card.revisionCount = state ? (state.revisionCount || 0) : 0;
+    card.currentUserQuestionProgress = qp
+      ? {
+          attemptStatus: qp.attemptStatus,
+          perceivedDifficultyByUser: qp.perceivedDifficultyByUser,
+        }
+      : null;
   } else {
     card.isFavorite = false;
     card.isDifficult = false;
     card.isArchived = false;
     card.difficultyState = null;
     card.revisionCount = 0;
+    card.currentUserQuestionProgress = null;
   }
 
   return card;
@@ -304,7 +377,7 @@ export const getRevisionCardsByIds = async (
     .lean() as any[];
 
   if (userId && cards.length > 0) {
-    const [progressList, userStates] = await Promise.all([
+    const [progressList, userStates, questionProgressList] = await Promise.all([
       Progress.find({
         userId: new Types.ObjectId(userId),
         revisionCardId: { $in: validIds },
@@ -312,20 +385,32 @@ export const getRevisionCardsByIds = async (
       UserCardState.find({
         userId: new Types.ObjectId(userId),
         cardId: { $in: validIds },
-      }).lean()
+      }).lean(),
+      UserQuestionProgress.find({
+        userId: new Types.ObjectId(userId),
+        questionId: { $in: validIds },
+      }).lean(),
     ]);
 
     const progressMap = new Map(progressList.map((p: any) => [p.revisionCardId?.toString(), p]));
     const statesMap = new Map(userStates.map((s: any) => [s.cardId?.toString(), s]));
+    const qProgressMap = new Map(questionProgressList.map((qp: any) => [qp.questionId?.toString(), qp]));
 
     cards.forEach((card: any) => {
       const prog = progressMap.get(card._id.toString());
       const state = statesMap.get(card._id.toString());
+      const qp = qProgressMap.get(card._id.toString());
       card.isFavorite = prog ? !!prog.favorite : false;
       card.isDifficult = prog ? !!prog.difficult : false;
       card.isArchived = prog ? !!prog.archived : false;
       card.difficultyState = prog ? (prog.difficultyState || null) : null;
       card.revisionCount = state ? (state.revisionCount || 0) : 0;
+      card.currentUserQuestionProgress = qp
+        ? {
+            attemptStatus: qp.attemptStatus,
+            perceivedDifficultyByUser: qp.perceivedDifficultyByUser,
+          }
+        : null;
     });
   } else {
     cards.forEach((card: any) => {
@@ -334,6 +419,7 @@ export const getRevisionCardsByIds = async (
       card.isArchived = false;
       card.difficultyState = null;
       card.revisionCount = 0;
+      card.currentUserQuestionProgress = null;
     });
   }
 

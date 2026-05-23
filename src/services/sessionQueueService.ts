@@ -4,8 +4,23 @@ import Folder from '../models/folder.model';
 import Playlist from '../models/playlist.model';
 import UserCardState from '../models/userCardState.model';
 import RevisionCard from '../models/revisionCard.model';
+import UserQuestionProgress from '../models/userQuestionProgress.model';
 import ApiError from '../utils/ApiError';
 import httpStatus from 'http-status';
+
+const SMART_PLAYLIST_MAP: Record<string, string> = {
+  easy: '000000000000000000000001',
+  medium: '000000000000000000000002',
+  hard: '000000000000000000000003',
+  skipped: '000000000000000000000004',
+};
+
+const REVERSE_SMART_PLAYLIST_MAP: Record<string, string> = {
+  '000000000000000000000001': 'easy',
+  '000000000000000000000002': 'medium',
+  '000000000000000000000003': 'hard',
+  '000000000000000000000004': 'skipped',
+};
 
 // Helper to shuffle a copy of an array (Fisher-Yates Shuffle)
 const shuffleArray = <T>(array: T[]): T[] => {
@@ -17,6 +32,59 @@ const shuffleArray = <T>(array: T[]): T[] => {
   return arr;
 };
 
+// Helper to recursively fetch child folders and all revision cards matching those folders in order
+const getFolderCardIdsRecursively = async (
+  folderId: mongoose.Types.ObjectId | string
+): Promise<mongoose.Types.ObjectId[]> => {
+  const rootId = typeof folderId === 'string' ? new Types.ObjectId(folderId) : folderId;
+  const rootFolder = await Folder.findById(rootId).lean();
+  if (!rootFolder) return [];
+
+  // Helper to recursively fetch child folders in order
+  const getDescendants = async (fid: mongoose.Types.ObjectId): Promise<any[]> => {
+    const children = await Folder.find({ parentFolderId: fid }).lean();
+    const sorted = children.sort((a, b) => (a.order || 0) - (b.order || 0));
+    const list: any[] = [];
+    for (const child of sorted) {
+      list.push(child);
+      const sub = await getDescendants(child._id as mongoose.Types.ObjectId);
+      list.push(...sub);
+    }
+    return list;
+  };
+
+  const allFolders = [rootFolder, ...(await getDescendants(rootId))];
+  const folderIds = allFolders.map((f) => f._id);
+
+  // Fetch all revision cards matching these folders
+  const cards = await RevisionCard.find({ folderId: { $in: folderIds } })
+    .select('_id folderId order')
+    .lean();
+
+  // Group cards by folder ID to maintain hierarchy order
+  const cardsByFolder: Record<string, typeof cards> = {};
+  for (const card of cards) {
+    const fidStr = card.folderId.toString();
+    if (!cardsByFolder[fidStr]) {
+      cardsByFolder[fidStr] = [];
+    }
+    cardsByFolder[fidStr].push(card);
+  }
+
+  const sortedCardIds: mongoose.Types.ObjectId[] = [];
+  for (const f of allFolders) {
+    const fidStr = f._id.toString();
+    const folderCards = cardsByFolder[fidStr] || [];
+    // Sort folder cards by order
+    const sortedFolderCards = folderCards.sort((a, b) => (a.order || 0) - (b.order || 0));
+    for (const card of sortedFolderCards) {
+      sortedCardIds.push(card._id as mongoose.Types.ObjectId);
+    }
+  }
+
+  return sortedCardIds;
+};
+
 export const createSession = async (
   userId: string,
   sourceType: 'folder' | 'playlist' | 'liked' | 'watchLater',
@@ -26,38 +94,30 @@ export const createSession = async (
   let cardIds: mongoose.Types.ObjectId[] = [];
 
   const uid = new Types.ObjectId(userId);
-  const sid = new Types.ObjectId(sourceId);
+  const isSmartPlaylist = ['easy', 'medium', 'hard', 'skipped'].includes(sourceId);
+  const targetSourceId = isSmartPlaylist ? SMART_PLAYLIST_MAP[sourceId] : sourceId;
+  const sid = new Types.ObjectId(targetSourceId);
 
   // 1. Fetch card IDs based on source type
-  if (sourceType === 'folder') {
-    const folder = await Folder.findOne({ _id: sid }).lean();
-    if (!folder) throw new ApiError(httpStatus.NOT_FOUND, 'Folder not found');
-    
-    // Fetch child folders (sections) recursively/one level deep
-    const childFolders = await Folder.find({ parentFolderId: sid }).lean();
-    let aggregatedCardIds = [...(folder.cardIds || [])];
-    
-    if (childFolders && childFolders.length > 0) {
-      // Sort child folders by order field
-      const sortedChildren = childFolders.sort((a, b) => (a.order || 0) - (b.order || 0));
-      for (const child of sortedChildren) {
-        if (child.cardIds) {
-          aggregatedCardIds.push(...child.cardIds);
-        }
-      }
+  if (sourceType === 'playlist' && isSmartPlaylist) {
+    const filterQuery: any = { userId: uid };
+    if (sourceId === 'skipped') {
+      filterQuery.attemptStatus = 'skipped';
+    } else {
+      filterQuery.attemptStatus = 'attempted';
+      filterQuery.perceivedDifficultyByUser = sourceId;
     }
-    
-    // Deduplicate card IDs while preserving order
-    const seenIds = new Set<string>();
-    const uniqueCardIds: mongoose.Types.ObjectId[] = [];
-    for (const id of aggregatedCardIds) {
-      const idStr = id.toString();
-      if (!seenIds.has(idStr)) {
-        seenIds.add(idStr);
-        uniqueCardIds.push(id);
-      }
-    }
-    cardIds = uniqueCardIds;
+
+    const progressRecords = await UserQuestionProgress.find(filterQuery)
+      .select('questionId')
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    cardIds = progressRecords
+      .map((p) => p.questionId as mongoose.Types.ObjectId)
+      .filter(Boolean);
+  } else if (sourceType === 'folder') {
+    cardIds = await getFolderCardIdsRecursively(sid);
   } else if (sourceType === 'playlist') {
     const playlist = await Playlist.findOne({ _id: sid, userId: uid }).lean();
     if (!playlist) throw new ApiError(httpStatus.NOT_FOUND, 'Playlist not found or unauthorized');
@@ -79,6 +139,14 @@ export const createSession = async (
   }
 
   if (cardIds.length === 0) {
+    console.log('[Session Queue Debug]', {
+      sourceId,
+      sourceType,
+      userId,
+      isSmartPlaylist,
+      cardCount: cardIds.length,
+    });
+    
     throw new ApiError(httpStatus.BAD_REQUEST, 'The selected source has no cards to play');
   }
 
@@ -159,11 +227,30 @@ export const toggleSessionShuffle = async (
     let originalIds: mongoose.Types.ObjectId[] = [];
     
     if (session.sourceType === 'folder') {
-      const folder = await Folder.findById(session.sourceId).lean();
-      originalIds = folder?.cardIds || [];
+      originalIds = await getFolderCardIdsRecursively(session.sourceId);
     } else if (session.sourceType === 'playlist') {
-      const playlist = await Playlist.findById(session.sourceId).lean();
-      originalIds = playlist?.cardIds || [];
+      const isSmart = REVERSE_SMART_PLAYLIST_MAP[session.sourceId.toString()];
+      if (isSmart) {
+        const filterQuery: any = { userId: session.userId };
+        if (isSmart === 'skipped') {
+          filterQuery.attemptStatus = 'skipped';
+        } else {
+          filterQuery.attemptStatus = 'attempted';
+          filterQuery.perceivedDifficultyByUser = isSmart;
+        }
+
+        const progressRecords = await UserQuestionProgress.find(filterQuery)
+          .select('questionId')
+          .sort({ updatedAt: -1 })
+          .lean();
+
+        originalIds = progressRecords
+          .map((p) => p.questionId as mongoose.Types.ObjectId)
+          .filter(Boolean);
+      } else {
+        const playlist = await Playlist.findById(session.sourceId).lean();
+        originalIds = playlist?.cardIds || [];
+      }
     } else if (session.sourceType === 'liked') {
       const states = await UserCardState.find({ userId: session.userId, liked: true })
         .sort({ updatedAt: -1 })

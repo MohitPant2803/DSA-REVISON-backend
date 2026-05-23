@@ -62,6 +62,7 @@ export const queryRevisionCardsSchema = z.object({
     folderId: z.string().optional(),
     tags: z.string().optional(),
     excludeSlides: z.string().optional(),
+    userDifficultyStates: z.string().optional(),
   }),
 });
 
