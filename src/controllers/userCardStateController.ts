@@ -4,13 +4,13 @@ import httpStatus from 'http-status';
 import * as userCardStateService from '../services/userCardStateService';
 import { AuthRequest } from '../middleware/authMiddleware';
 
-export const toggleLikeHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+export const incrementRevisionHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { cardId } = req.body;
   if (!cardId) {
     res.status(httpStatus.BAD_REQUEST).json({ message: 'cardId is required' });
     return;
   }
-  const state = await userCardStateService.toggleLike(req.user!._id.toString(), cardId);
+  const state = await userCardStateService.incrementRevision(req.user!._id.toString(), cardId);
   res.status(httpStatus.OK).json(state);
 });
 

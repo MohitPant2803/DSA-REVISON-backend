@@ -6,6 +6,7 @@ export interface IUserCardState extends Document {
   liked: boolean;
   watchLater: boolean;
   viewed: boolean;
+  revisionCount: number;
   lastViewedAt?: Date;
 }
 
@@ -15,6 +16,7 @@ const UserCardStateSchema = new Schema<IUserCardState>({
   liked: { type: Boolean, default: false },
   watchLater: { type: Boolean, default: false },
   viewed: { type: Boolean, default: false },
+  revisionCount: { type: Number, default: 0 },
   lastViewedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

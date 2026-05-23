@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  toggleLikeHandler,
+  incrementRevisionHandler,
   toggleWatchLaterHandler,
   markViewedHandler,
   getLikedCardsHandler,
@@ -13,7 +13,8 @@ const router = Router();
 
 router.use(protect);
 
-router.post('/like', toggleLikeHandler);
+router.post('/like', incrementRevisionHandler);
+router.post('/revision/increment', incrementRevisionHandler);
 router.post('/watch-later', toggleWatchLaterHandler);
 router.post('/viewed', markViewedHandler);
 router.get('/liked', getLikedCardsHandler);

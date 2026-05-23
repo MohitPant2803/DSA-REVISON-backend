@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { successResponse, errorResponse } from '../utils/responseHandler';
-import { createPlaylistSchema, playlistItemActionSchema, queryPlaylistSchema } from '../validators/playlist.validator';
+import { createPlaylistSchema, playlistItemActionSchema, queryPlaylistSchema, updatePlaylistSchema } from '../validators/playlist.validator';
 import {
   createPlaylistService,
   getUserPlaylistsService,
@@ -9,6 +9,8 @@ import {
   deletePlaylistService,
   addItemToPlaylistService,
   removeItemFromPlaylistService,
+  updatePlaylistService,
+  duplicatePlaylistService,
 } from '../services/playlist.service';
 
 export interface AuthRequest extends Request {
@@ -76,4 +78,17 @@ export const reorderPlaylist = asyncHandler(async (req: AuthRequest, res: Respon
   const { reorderPlaylistService } = require('../services/playlist.service');
   const playlist = await reorderPlaylistService(id, req.user!._id.toString(), cardIds);
   return successResponse(res, 200, 'Playlist reordered successfully', { playlist });
+});
+
+export const updatePlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const payload = updatePlaylistSchema.parse(req.body);
+  const playlist = await updatePlaylistService(req.params.id, req.user!._id.toString(), payload);
+  if (!playlist) return errorResponse(res, 404, 'Playlist not found or unauthorized');
+  return successResponse(res, 200, 'Playlist updated successfully', { playlist });
+});
+
+export const duplicatePlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const playlist = await duplicatePlaylistService(req.params.id, req.user!._id.toString());
+  if (!playlist) return errorResponse(res, 404, 'Playlist not found or unauthorized');
+  return successResponse(res, 201, 'Playlist duplicated successfully', { playlist });
 });

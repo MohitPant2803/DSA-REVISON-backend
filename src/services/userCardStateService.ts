@@ -28,9 +28,10 @@ export const getUserCardState = async (userId: string, cardId: string): Promise<
 };
 
 
-export const toggleLike = async (userId: string, cardId: string): Promise<IUserCardState> => {
+export const incrementRevision = async (userId: string, cardId: string): Promise<IUserCardState> => {
   const state = await getUserCardState(userId, cardId);
-  state.liked = !state.liked;
+  state.revisionCount = (state.revisionCount || 0) + 1;
+  state.liked = true; // Mark as liked/revised so it appears in the Revised playlist
   await state.save();
   return state;
 };
@@ -84,6 +85,7 @@ export const getLikedCards = async (userId: string, query: { page?: string; limi
           liked: true,
           watchLater: s.watchLater,
           viewed: s.viewed,
+          revisionCount: s.revisionCount || 0,
         };
       }
       return null;

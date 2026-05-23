@@ -22,3 +22,11 @@ export const queryPlaylistSchema = z.object({
   limit: z.string().optional(),
   sort: z.string().optional(),
 });
+
+export const updatePlaylistSchema = z.object({
+  name: z.string().min(1, 'Playlist name is required').optional(),
+  description: z.string().optional(),
+  color1: z.string().optional(),
+  color2: z.string().optional(),
+});
+

@@ -108,3 +108,29 @@ export const reorderPlaylistService = async (playlistId: string, userId: string,
   await playlist.save();
   return playlist;
 };
+
+export const updatePlaylistService = async (
+  playlistId: string,
+  userId: string,
+  data: { name?: string; description?: string; color1?: string; color2?: string }
+): Promise<IPlaylist | null> => {
+  return Playlist.findOneAndUpdate({ _id: playlistId, userId }, data, { new: true });
+};
+
+export const duplicatePlaylistService = async (
+  playlistId: string,
+  userId: string
+): Promise<IPlaylist | null> => {
+  const original = await Playlist.findOne({ _id: playlistId, userId });
+  if (!original) return null;
+
+  return Playlist.create({
+    name: `${original.name} Copy`,
+    userId,
+    cardIds: original.cardIds || [],
+    itemCount: original.itemCount || 0,
+    color1: original.color1,
+    color2: original.color2,
+  });
+};
+

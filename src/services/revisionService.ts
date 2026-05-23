@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import RevisionCard, { IRevisionCard } from '../models/revisionCard.model';
 import Folder from '../models/folder.model';
 import Progress from '../models/progress.model';
+import UserCardState from '../models/userCardState.model';
 import {
   CreateRevisionCardInput,
   QueryRevisionCardsInput,
@@ -83,23 +84,34 @@ export const queryRevisionCards = async (
 
   if (userId) {
     const cardIds = results.map((r) => r._id);
-    const progressList = await Progress.find({
-      userId: new Types.ObjectId(userId),
-      revisionCardId: { $in: cardIds },
-    }).lean();
+    const [progressList, userStates] = await Promise.all([
+      Progress.find({
+        userId: new Types.ObjectId(userId),
+        revisionCardId: { $in: cardIds },
+      }).lean(),
+      UserCardState.find({
+        userId: new Types.ObjectId(userId),
+        cardId: { $in: cardIds },
+      }).lean()
+    ]);
 
     const progressMap = new Map(progressList.map((p: any) => [p.revisionCardId?.toString(), p]));
+    const statesMap = new Map(userStates.map((s: any) => [s.cardId?.toString(), s]));
+
     results.forEach((card: any) => {
       const prog = progressMap.get(card._id.toString());
+      const state = statesMap.get(card._id.toString());
       card.isFavorite = prog ? !!prog.favorite : false;
       card.isDifficult = prog ? !!prog.difficult : false;
       card.isArchived = prog ? !!prog.archived : false;
+      card.revisionCount = state ? (state.revisionCount || 0) : 0;
     });
   } else {
     results.forEach((card: any) => {
       card.isFavorite = false;
       card.isDifficult = false;
       card.isArchived = false;
+      card.revisionCount = 0;
     });
   }
 
@@ -133,17 +145,25 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, 
   }
 
   if (userId) {
-    const prog = await Progress.findOne({
-      userId: new Types.ObjectId(userId),
-      revisionCardId: card._id,
-    }).lean();
+    const [prog, state] = await Promise.all([
+      Progress.findOne({
+        userId: new Types.ObjectId(userId),
+        revisionCardId: card._id,
+      }).lean(),
+      UserCardState.findOne({
+        userId: new Types.ObjectId(userId),
+        cardId: card._id,
+      }).lean()
+    ]);
     card.isFavorite = prog ? !!prog.favorite : false;
     card.isDifficult = prog ? !!prog.difficult : false;
     card.isArchived = prog ? !!prog.archived : false;
+    card.revisionCount = state ? (state.revisionCount || 0) : 0;
   } else {
     card.isFavorite = false;
     card.isDifficult = false;
     card.isArchived = false;
+    card.revisionCount = 0;
   }
 
   return card;
@@ -280,23 +300,34 @@ export const getRevisionCardsByIds = async (
     .lean() as any[];
 
   if (userId && cards.length > 0) {
-    const progressList = await Progress.find({
-      userId: new Types.ObjectId(userId),
-      revisionCardId: { $in: validIds },
-    }).lean();
+    const [progressList, userStates] = await Promise.all([
+      Progress.find({
+        userId: new Types.ObjectId(userId),
+        revisionCardId: { $in: validIds },
+      }).lean(),
+      UserCardState.find({
+        userId: new Types.ObjectId(userId),
+        cardId: { $in: validIds },
+      }).lean()
+    ]);
 
     const progressMap = new Map(progressList.map((p: any) => [p.revisionCardId?.toString(), p]));
+    const statesMap = new Map(userStates.map((s: any) => [s.cardId?.toString(), s]));
+
     cards.forEach((card: any) => {
       const prog = progressMap.get(card._id.toString());
+      const state = statesMap.get(card._id.toString());
       card.isFavorite = prog ? !!prog.favorite : false;
       card.isDifficult = prog ? !!prog.difficult : false;
       card.isArchived = prog ? !!prog.archived : false;
+      card.revisionCount = state ? (state.revisionCount || 0) : 0;
     });
   } else {
     cards.forEach((card: any) => {
       card.isFavorite = false;
       card.isDifficult = false;
       card.isArchived = false;
+      card.revisionCount = 0;
     });
   }
 
