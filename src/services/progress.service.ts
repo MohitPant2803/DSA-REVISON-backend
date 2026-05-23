@@ -3,6 +3,7 @@ import Progress from '../models/progress.model';
 import User from '../models/user.model';
 import RevisionCard from '../models/revisionCard.model';
 import Folder from '../models/folder.model';
+import UserQuestionProgress from '../models/userQuestionProgress.model';
 import '../models/folderProgress.model';
 import '../models/playlistProgress.model';
 import '../models/playlist.model';
@@ -46,6 +47,22 @@ export const updateProgressService = async (userId: string, data: ProgressUpdate
   if (difficultyState !== undefined) {
     updatePayload.difficultyState = difficultyState;
     updatePayload.stateChangedAt = new Date();
+
+    if (revisionCardId) {
+      const qid = new mongoose.Types.ObjectId(revisionCardId);
+      const uid = new mongoose.Types.ObjectId(userId);
+      if (difficultyState === null) {
+        await UserQuestionProgress.deleteOne({ userId: uid, questionId: qid });
+      } else {
+        const attemptStatus = difficultyState === 'skipped' ? 'skipped' : 'attempted';
+        const perceivedDifficultyByUser = difficultyState === 'skipped' ? null : difficultyState;
+        await UserQuestionProgress.findOneAndUpdate(
+          { userId: uid, questionId: qid },
+          { $set: { attemptStatus, perceivedDifficultyByUser } },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+      }
+    }
   }
 
   const incPayload: Record<string, number> = { revisionCount: 1 };

@@ -3,6 +3,7 @@ import Playlist, { IPlaylist } from '../models/playlist.model';
 import RevisionCard from '../models/revisionCard.model';
 import Progress from '../models/progress.model';
 import UserQuestionProgress from '../models/userQuestionProgress.model';
+import UserCardState from '../models/userCardState.model';
 
 export const createPlaylistService = async (userId: string, data: any): Promise<IPlaylist> => {
   return Playlist.create({ ...data, userId, cardIds: [] });
@@ -100,18 +101,42 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
       .map((p: any) => p.questionId)
       .filter((c: any) => c && c._id);
 
+    const cardIdsForPop = cards.map((c: any) => c._id);
+    const [progressList, userStates, questionProgressList] = await Promise.all([
+      Progress.find({
+        userId: userObjectId,
+        revisionCardId: { $in: cardIdsForPop },
+      }).lean(),
+      UserCardState.find({
+        userId: userObjectId,
+        cardId: { $in: cardIdsForPop },
+      }).lean(),
+      UserQuestionProgress.find({
+        userId: userObjectId,
+        questionId: { $in: cardIdsForPop },
+      }).lean(),
+    ]);
+
+    const progressMap = new Map(progressList.map((p: any) => [p.revisionCardId?.toString(), p]));
+    const statesMap = new Map(userStates.map((s: any) => [s.cardId?.toString(), s]));
+    const qProgressMap = new Map(questionProgressList.map((qp: any) => [qp.questionId?.toString(), qp]));
+
     cards.forEach((card: any) => {
-      const matchingRecord = progressRecords.find(
-        (p) => p.questionId && p.questionId._id.toString() === card._id.toString()
-      );
-      if (matchingRecord) {
-        card.currentUserQuestionProgress = {
-          attemptStatus: matchingRecord.attemptStatus,
-          perceivedDifficultyByUser: matchingRecord.perceivedDifficultyByUser,
-        };
-      } else {
-        card.currentUserQuestionProgress = null;
-      }
+      const prog = progressMap.get(card._id.toString());
+      const state = statesMap.get(card._id.toString());
+      const qp = qProgressMap.get(card._id.toString());
+
+      card.isFavorite = prog ? !!prog.favorite : false;
+      card.isDifficult = prog ? !!prog.difficult : false;
+      card.isArchived = prog ? !!prog.archived : false;
+      card.difficultyState = prog ? (prog.difficultyState || null) : null;
+      card.revisionCount = state ? (state.revisionCount || 0) : 0;
+      card.currentUserQuestionProgress = qp
+        ? {
+            attemptStatus: qp.attemptStatus,
+            perceivedDifficultyByUser: qp.perceivedDifficultyByUser,
+          }
+        : null;
     });
 
     const cardIds = cards.map((c: any) => c._id.toString());

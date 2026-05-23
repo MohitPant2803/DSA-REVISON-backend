@@ -5,6 +5,7 @@ import Playlist from '../models/playlist.model';
 import UserCardState from '../models/userCardState.model';
 import RevisionCard from '../models/revisionCard.model';
 import UserQuestionProgress from '../models/userQuestionProgress.model';
+import Progress from '../models/progress.model';
 import ApiError from '../utils/ApiError';
 import httpStatus from 'http-status';
 
@@ -295,6 +296,44 @@ export const getSessionCardsSlice = async (
 
   // Fetch only cards in this slice window
   const cards = await RevisionCard.find({ _id: { $in: cardSliceIds } }).lean();
+
+  // Populate progress fields for the cards
+  const [progressList, userStates, questionProgressList] = await Promise.all([
+    Progress.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      revisionCardId: { $in: cardSliceIds },
+    }).lean(),
+    UserCardState.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      cardId: { $in: cardSliceIds },
+    }).lean(),
+    UserQuestionProgress.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      questionId: { $in: cardSliceIds },
+    }).lean(),
+  ]);
+
+  const progressMap = new Map(progressList.map((p: any) => [p.revisionCardId?.toString(), p]));
+  const statesMap = new Map(userStates.map((s: any) => [s.cardId?.toString(), s]));
+  const qProgressMap = new Map(questionProgressList.map((qp: any) => [qp.questionId?.toString(), qp]));
+
+  cards.forEach((card: any) => {
+    const prog = progressMap.get(card._id.toString());
+    const state = statesMap.get(card._id.toString());
+    const qp = qProgressMap.get(card._id.toString());
+
+    card.isFavorite = prog ? !!prog.favorite : false;
+    card.isDifficult = prog ? !!prog.difficult : false;
+    card.isArchived = prog ? !!prog.archived : false;
+    card.difficultyState = prog ? (prog.difficultyState || null) : null;
+    card.revisionCount = state ? (state.revisionCount || 0) : 0;
+    card.currentUserQuestionProgress = qp
+      ? {
+          attemptStatus: qp.attemptStatus,
+          perceivedDifficultyByUser: qp.perceivedDifficultyByUser,
+        }
+      : null;
+  });
 
   // Sort according to slice window order
   const cardMap = new Map(cards.map((c) => [c._id.toString(), c]));

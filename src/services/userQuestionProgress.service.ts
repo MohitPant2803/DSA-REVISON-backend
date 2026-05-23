@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import UserQuestionProgress, { AttemptStatus, PerceivedDifficulty } from '../models/userQuestionProgress.model';
+import Progress from '../models/progress.model';
 import RevisionCard from '../models/revisionCard.model';
 import ApiError from '../utils/ApiError';
 import httpStatus from 'http-status';
@@ -24,6 +25,11 @@ export const updateUserQuestionProgress = async (
   // If state is null, delete the progress record entirely (resetting to unattempted)
   if (state === null) {
     await UserQuestionProgress.deleteOne({ userId: userObjectId, questionId: questionObjectId });
+    await Progress.findOneAndUpdate(
+      { userId: userObjectId, revisionCardId: questionObjectId },
+      { $set: { difficultyState: null, stateChangedAt: new Date() } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).catch(console.error);
     return null;
   }
 
@@ -40,6 +46,11 @@ export const updateUserQuestionProgress = async (
 
     if (isAlreadyActive) {
       await UserQuestionProgress.deleteOne({ userId: userObjectId, questionId: questionObjectId });
+      await Progress.findOneAndUpdate(
+        { userId: userObjectId, revisionCardId: questionObjectId },
+        { $set: { difficultyState: null, stateChangedAt: new Date() } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).catch(console.error);
       return null;
     }
   }
@@ -66,6 +77,12 @@ export const updateUserQuestionProgress = async (
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
+
+  await Progress.findOneAndUpdate(
+    { userId: userObjectId, revisionCardId: questionObjectId },
+    { $set: { difficultyState: state, stateChangedAt: new Date() } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  ).catch(console.error);
 
   return result;
 };
