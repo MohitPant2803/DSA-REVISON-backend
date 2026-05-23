@@ -25,17 +25,9 @@ const app: Application = express();
 // Security Middlewares
 app.use(helmet());
 
-const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow mobile apps (no origin) or explicitly allowed web domains
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Blocked by CORS policy'));
-      }
-    },
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
   })
