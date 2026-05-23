@@ -14,6 +14,7 @@ export const updateProgressSchema = z
     archived: z.boolean().optional(),
     addToPlaylist: z.string().optional(),
     removeFromPlaylist: z.string().optional(),
+    difficultyState: z.enum(['easy', 'medium', 'hard', 'skipped']).nullable().optional(),
   })
   .refine((data) => data.placardId || data.revisionCardId, {
     message: 'Either placardId or revisionCardId is required',

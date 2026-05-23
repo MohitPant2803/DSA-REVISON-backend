@@ -26,7 +26,7 @@ const cardPopulate = {
 };
 
 export const updateProgressService = async (userId: string, data: ProgressUpdateInput) => {
-  const { placardId, revisionCardId, favorite, difficult, archived, timeSpent, addToPlaylist, removeFromPlaylist, ...updateData } = data;
+  const { placardId, revisionCardId, favorite, difficult, archived, timeSpent, addToPlaylist, removeFromPlaylist, difficultyState, ...updateData } = data;
 
   const filter: Record<string, unknown> = { userId };
   const setOnInsert: Record<string, unknown> = { userId };
@@ -43,6 +43,10 @@ export const updateProgressService = async (userId: string, data: ProgressUpdate
   if (favorite !== undefined) updatePayload.favorite = favorite;
   if (difficult !== undefined) updatePayload.difficult = difficult;
   if (archived !== undefined) updatePayload.archived = archived;
+  if (difficultyState !== undefined) {
+    updatePayload.difficultyState = difficultyState;
+    updatePayload.stateChangedAt = new Date();
+  }
 
   const incPayload: Record<string, number> = { revisionCount: 1 };
   if (data.timeSpent) {
@@ -137,6 +141,10 @@ export const getDashboardStatsService = async (userId: string) => {
           totalTimeSpent: { $sum: '$timeSpent' },
           favorites: { $sum: { $cond: ['$favorite', 1, 0] } },
           difficult: { $sum: { $cond: ['$difficult', 1, 0] } },
+          easyCount: { $sum: { $cond: [{ $eq: ['$difficultyState', 'easy'] }, 1, 0] } },
+          mediumCount: { $sum: { $cond: [{ $eq: ['$difficultyState', 'medium'] }, 1, 0] } },
+          hardCount: { $sum: { $cond: [{ $eq: ['$difficultyState', 'hard'] }, 1, 0] } },
+          skippedCount: { $sum: { $cond: [{ $eq: ['$difficultyState', 'skipped'] }, 1, 0] } },
         },
       },
     ]),
@@ -198,6 +206,10 @@ export const getDashboardStatsService = async (userId: string) => {
     totalTimeSpent: 0,
     favorites: 0,
     difficult: 0,
+    easyCount: 0,
+    mediumCount: 0,
+    hardCount: 0,
+    skippedCount: 0,
   };
 
   const totalCards = await RevisionCard.countDocuments({ visibility: 'public' });
@@ -209,6 +221,10 @@ export const getDashboardStatsService = async (userId: string) => {
     totalTimeSpent: overall.totalTimeSpent,
     favoritesCount: overall.favorites,
     difficultCount: overall.difficult,
+    easyCount: overall.easyCount ?? 0,
+    mediumCount: overall.mediumCount ?? 0,
+    hardCount: overall.hardCount ?? 0,
+    skippedCount: overall.skippedCount ?? 0,
     totalCardsAvailable: totalCards,
     recentlyRevised: recentProgress
       .filter((p) => p.revisionCardId)

@@ -104,6 +104,7 @@ export const queryRevisionCards = async (
       card.isFavorite = prog ? !!prog.favorite : false;
       card.isDifficult = prog ? !!prog.difficult : false;
       card.isArchived = prog ? !!prog.archived : false;
+      card.difficultyState = prog ? (prog.difficultyState || null) : null;
       card.revisionCount = state ? (state.revisionCount || 0) : 0;
     });
   } else {
@@ -111,6 +112,7 @@ export const queryRevisionCards = async (
       card.isFavorite = false;
       card.isDifficult = false;
       card.isArchived = false;
+      card.difficultyState = null;
       card.revisionCount = 0;
     });
   }
@@ -158,11 +160,13 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, 
     card.isFavorite = prog ? !!prog.favorite : false;
     card.isDifficult = prog ? !!prog.difficult : false;
     card.isArchived = prog ? !!prog.archived : false;
+    card.difficultyState = prog ? (prog.difficultyState || null) : null;
     card.revisionCount = state ? (state.revisionCount || 0) : 0;
   } else {
     card.isFavorite = false;
     card.isDifficult = false;
     card.isArchived = false;
+    card.difficultyState = null;
     card.revisionCount = 0;
   }
 
@@ -320,6 +324,7 @@ export const getRevisionCardsByIds = async (
       card.isFavorite = prog ? !!prog.favorite : false;
       card.isDifficult = prog ? !!prog.difficult : false;
       card.isArchived = prog ? !!prog.archived : false;
+      card.difficultyState = prog ? (prog.difficultyState || null) : null;
       card.revisionCount = state ? (state.revisionCount || 0) : 0;
     });
   } else {
@@ -327,6 +332,7 @@ export const getRevisionCardsByIds = async (
       card.isFavorite = false;
       card.isDifficult = false;
       card.isArchived = false;
+      card.difficultyState = null;
       card.revisionCount = 0;
     });
   }

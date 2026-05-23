@@ -36,6 +36,9 @@ export const getPlaylistById = asyncHandler(async (req: AuthRequest, res: Respon
 });
 
 export const deletePlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (['easy', 'medium', 'hard', 'skipped'].includes(req.params.id)) {
+    return errorResponse(res, 400, 'Permanent smart playlists cannot be deleted');
+  }
   const result = await deletePlaylistService(req.params.id, req.user!._id.toString());
   if (!result) return errorResponse(res, 404, 'Playlist not found');
   return successResponse(res, 200, 'Playlist deleted successfully');
@@ -44,6 +47,9 @@ export const deletePlaylist = asyncHandler(async (req: AuthRequest, res: Respons
 export const addPlacard = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     const { playlistId, placardId, revisionCardId } = playlistItemActionSchema.parse(req.body);
+    if (['easy', 'medium', 'hard', 'skipped'].includes(playlistId)) {
+      return errorResponse(res, 400, 'Items in permanent smart playlists must be updated via card classifications');
+    }
     await addItemToPlaylistService(playlistId, req.user!._id.toString(), {
       placardId,
       revisionCardId,
@@ -59,6 +65,9 @@ export const addPlacard = asyncHandler(async (req: AuthRequest, res: Response) =
 
 export const removePlacard = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { playlistId, placardId, revisionCardId } = playlistItemActionSchema.parse(req.body);
+  if (['easy', 'medium', 'hard', 'skipped'].includes(playlistId)) {
+    return errorResponse(res, 400, 'Items in permanent smart playlists must be updated via card classifications');
+  }
   const result = await removeItemFromPlaylistService(playlistId, req.user!._id.toString(), {
     placardId,
     revisionCardId,
@@ -71,6 +80,9 @@ export const reorderPlaylist = asyncHandler(async (req: AuthRequest, res: Respon
   const { cardIds } = req.body;
   const { id } = req.params;
   
+  if (['easy', 'medium', 'hard', 'skipped'].includes(id)) {
+    return errorResponse(res, 400, 'Permanent smart playlists cannot be reordered');
+  }
   if (!Array.isArray(cardIds)) {
     return errorResponse(res, 400, 'cardIds must be an array of strings');
   }
@@ -81,6 +93,9 @@ export const reorderPlaylist = asyncHandler(async (req: AuthRequest, res: Respon
 });
 
 export const updatePlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (['easy', 'medium', 'hard', 'skipped'].includes(req.params.id)) {
+    return errorResponse(res, 400, 'Permanent smart playlists cannot be modified');
+  }
   const payload = updatePlaylistSchema.parse(req.body);
   const playlist = await updatePlaylistService(req.params.id, req.user!._id.toString(), payload);
   if (!playlist) return errorResponse(res, 404, 'Playlist not found or unauthorized');
@@ -88,6 +103,9 @@ export const updatePlaylist = asyncHandler(async (req: AuthRequest, res: Respons
 });
 
 export const duplicatePlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (['easy', 'medium', 'hard', 'skipped'].includes(req.params.id)) {
+    return errorResponse(res, 400, 'Permanent smart playlists cannot be duplicated');
+  }
   const playlist = await duplicatePlaylistService(req.params.id, req.user!._id.toString());
   if (!playlist) return errorResponse(res, 404, 'Playlist not found or unauthorized');
   return successResponse(res, 201, 'Playlist duplicated successfully', { playlist });

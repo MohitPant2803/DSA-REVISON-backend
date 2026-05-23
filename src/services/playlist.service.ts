@@ -1,16 +1,122 @@
 import mongoose from 'mongoose';
 import Playlist, { IPlaylist } from '../models/playlist.model';
 import RevisionCard from '../models/revisionCard.model';
+import Progress from '../models/progress.model';
 
 export const createPlaylistService = async (userId: string, data: any): Promise<IPlaylist> => {
   return Playlist.create({ ...data, userId, cardIds: [] });
 };
 
 export const getUserPlaylistsService = async (userId: string): Promise<any[]> => {
-  return Playlist.find({ userId }).sort('-updatedAt').lean();
+  const [easyCount, mediumCount, hardCount, skippedCount, customPlaylists] = await Promise.all([
+    Progress.countDocuments({ userId: new mongoose.Types.ObjectId(userId), difficultyState: 'easy' }),
+    Progress.countDocuments({ userId: new mongoose.Types.ObjectId(userId), difficultyState: 'medium' }),
+    Progress.countDocuments({ userId: new mongoose.Types.ObjectId(userId), difficultyState: 'hard' }),
+    Progress.countDocuments({ userId: new mongoose.Types.ObjectId(userId), difficultyState: 'skipped' }),
+    Playlist.find({ userId }).sort('-updatedAt').lean(),
+  ]);
+
+  const smartPlaylists = [
+    {
+      _id: 'easy',
+      id: 'easy',
+      name: 'Easy',
+      title: 'Easy',
+      description: 'Dynamic list of cards you marked as Easy',
+      itemCount: easyCount,
+      completedLoops: 0,
+      totalCardsViewed: 0,
+      color1: '#10B981',
+      color2: '#059669',
+      cardIds: [],
+    },
+    {
+      _id: 'medium',
+      id: 'medium',
+      name: 'Medium',
+      title: 'Medium',
+      description: 'Dynamic list of cards you marked as Medium',
+      itemCount: mediumCount,
+      completedLoops: 0,
+      totalCardsViewed: 0,
+      color1: '#F59E0B',
+      color2: '#D97706',
+      cardIds: [],
+    },
+    {
+      _id: 'hard',
+      id: 'hard',
+      name: 'Hard',
+      title: 'Hard',
+      description: 'Dynamic list of cards you marked as Hard',
+      itemCount: hardCount,
+      completedLoops: 0,
+      totalCardsViewed: 0,
+      color1: '#EF4444',
+      color2: '#DC2626',
+      cardIds: [],
+    },
+    {
+      _id: 'skipped',
+      id: 'skipped',
+      name: 'Skipped',
+      title: 'Skipped',
+      description: 'Dynamic list of cards you skipped',
+      itemCount: skippedCount,
+      completedLoops: 0,
+      totalCardsViewed: 0,
+      color1: '#64748B',
+      color2: '#475569',
+      cardIds: [],
+    },
+  ];
+
+  return [...smartPlaylists, ...customPlaylists];
 };
 
 export const getPlaylistByIdService = async (playlistId: string, userId: string) => {
+  if (['easy', 'medium', 'hard', 'skipped'].includes(playlistId)) {
+    const progressRecords = await Progress.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      difficultyState: playlistId,
+    })
+      .populate({
+        path: 'revisionCardId',
+        select: 'title topic difficulty complexity tags explanation code image examples folderId',
+        populate: { path: 'folderId', select: 'title icon color' },
+      })
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    const cards = progressRecords
+      .map((p: any) => p.revisionCardId)
+      .filter((c: any) => c && c._id);
+
+    const cardIds = cards.map((c: any) => c._id.toString());
+
+    const name = playlistId.charAt(0).toUpperCase() + playlistId.slice(1);
+
+    const playlist = {
+      _id: playlistId,
+      id: playlistId,
+      name,
+      title: name,
+      description: `Dynamic list of cards you marked as ${name}`,
+      itemCount: cards.length,
+      completedLoops: 0,
+      totalCardsViewed: 0,
+      color1: playlistId === 'easy' ? '#10B981' : playlistId === 'medium' ? '#F59E0B' : playlistId === 'hard' ? '#EF4444' : '#64748B',
+      color2: playlistId === 'easy' ? '#059669' : playlistId === 'medium' ? '#D97706' : playlistId === 'hard' ? '#DC2626' : '#475569',
+      cardIds,
+    };
+
+    return {
+      playlist,
+      cardIds,
+      items: cards,
+    };
+  }
+
   if (!mongoose.Types.ObjectId.isValid(playlistId)) {
     return null;
   }
