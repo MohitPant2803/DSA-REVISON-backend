@@ -26,38 +26,47 @@ process.on('uncaughtException', (err: Error) => {
   process.exit(1);
 });
 
-const startServer = async () => {
-  try {
-    await connectDB();
+// ─── Traditional server for local development ─────────────────────
+// Vercel does NOT call `app.listen()`; it imports this module and
+// invokes the exported `app` as a serverless function.
+if (!process.env.VERCEL) {
+  const startServer = async () => {
+    try {
+      await connectDB();
 
-    const localIp = getLocalIpAddress();
+      const localIp = getLocalIpAddress();
 
-    // Explicitly bind to 0.0.0.0 to accept connections from devices on the local network (e.g. your Expo app)
-    const server = app.listen(Number(env.PORT), '0.0.0.0', () => {
-      logger.info(`Server running in ${env.NODE_ENV} mode on port ${env.PORT}`);
-      logger.info(`Local access ready: http://localhost:${env.PORT}`);
-      logger.info(`Network access ready: http://${localIp}:${env.PORT}`);
-    });
-
-    // Handle unhandled async promise rejections
-    process.on('unhandledRejection', (err: Error) => {
-      logger.error('Unhandled Rejection! Shutting down...', err);
-      server.close(() => {
-        process.exit(1);
+      // Explicitly bind to 0.0.0.0 to accept connections from devices on the local network (e.g. your Expo app)
+      const server = app.listen(Number(env.PORT), '0.0.0.0', () => {
+        logger.info(`Server running in ${env.NODE_ENV} mode on port ${env.PORT}`);
+        logger.info(`Local access ready: http://localhost:${env.PORT}`);
+        logger.info(`Network access ready: http://${localIp}:${env.PORT}`);
       });
-    });
 
-    // Gracefully shut down HTTP server
-    const shutdownServer = () => {
-      server.close(() => logger.info('HTTP server closed.'));
-    };
+      // Handle unhandled async promise rejections
+      process.on('unhandledRejection', (err: Error) => {
+        logger.error('Unhandled Rejection! Shutting down...', err);
+        server.close(() => {
+          process.exit(1);
+        });
+      });
 
-    process.on('SIGINT', shutdownServer);
-    process.on('SIGTERM', shutdownServer);
-  } catch (error) {
-    logger.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
+      // Gracefully shut down HTTP server
+      const shutdownServer = () => {
+        server.close(() => logger.info('HTTP server closed.'));
+      };
 
-startServer();
+      process.on('SIGINT', shutdownServer);
+      process.on('SIGTERM', shutdownServer);
+    } catch (error) {
+      logger.error('Failed to start server:', error);
+      process.exit(1);
+    }
+  };
+
+  startServer();
+}
+
+// ─── Vercel serverless export ─────────────────────────────────────
+// Vercel imports this module and uses the default export as the handler.
+export default app;

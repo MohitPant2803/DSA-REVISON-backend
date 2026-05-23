@@ -9,18 +9,46 @@ mongoose.plugin((schema: mongoose.Schema) => {
   schema.set('timestamps', true);
 });
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 5000;
+/**
+ * Cached connection for serverless environments (Vercel).
+ * In serverless, each invocation may or may not reuse the same
+ * runtime context. We cache the connection promise so that
+ * concurrent requests during a cold start don't open multiple
+ * connections, and warm invocations reuse the existing one.
+ */
+let cachedConnection: typeof mongoose | null = null;
+let connectionPromise: Promise<typeof mongoose> | null = null;
 
-export const connectDB = async (retryCount = 0): Promise<void> => {
+export const connectDB = async (): Promise<void> => {
+  // If we already have a ready connection, reuse it
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  // If a connection attempt is already in flight, wait for it
+  if (connectionPromise) {
+    cachedConnection = await connectionPromise;
+    return;
+  }
+
   try {
     logger.info('Attempting to connect to MongoDB...');
-    const conn = await mongoose.connect(env.MONGO_URI);
-    logger.info(`MongoDB Connected: ${conn.connection.host}`);
+
+    connectionPromise = mongoose.connect(env.MONGO_URI, {
+      // Serverless-optimised Mongoose options
+      bufferCommands: true,
+      maxPoolSize: 5,          // keep pool small for serverless
+      serverSelectionTimeoutMS: 15000,  // generous timeout for cold starts
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 15000,
+    });
+
+    cachedConnection = await connectionPromise;
+    logger.info(`MongoDB Connected: ${cachedConnection.connection.host}`);
 
     // Clean drop of legacy indexes to avoid compound index sparse duplicate bugs
     try {
-      const db = conn.connection.db;
+      const db = cachedConnection.connection.db;
       if (db) {
         const collection = db.collection('playlistitems');
         const indexes = await collection.indexes();
@@ -39,23 +67,20 @@ export const connectDB = async (retryCount = 0): Promise<void> => {
       logger.info(`MongoDB Index repair info: ${indexErr.message}`);
     }
   } catch (error: any) {
+    // Reset so the next invocation can retry
+    connectionPromise = null;
+    cachedConnection = null;
     logger.error(`Error connecting to MongoDB: ${error.message}`);
-    
-    if (retryCount < MAX_RETRIES) {
-      logger.info(`Retrying connection in ${RETRY_DELAY / 1000}s... (Attempt ${retryCount + 1} of ${MAX_RETRIES})`);
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-      await connectDB(retryCount + 1);
-    } else {
-      logger.error('Max connection retries reached. Exiting application.');
-      process.exit(1);
-    }
+    throw error; // let the caller handle it (don't process.exit in serverless!)
   }
 };
 
-// Handle MongoDB graceful shutdown
+// Handle MongoDB graceful shutdown (only fires on traditional long-running servers)
 const gracefulDBShutdown = async (signal: string) => {
   logger.info(`Received ${signal}. Closing MongoDB connection...`);
   await mongoose.connection.close();
+  cachedConnection = null;
+  connectionPromise = null;
   logger.info('MongoDB connection closed gracefully.');
 };
 

@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import { env } from './config/env';
+import { connectDB } from './config/db';
 import healthRoutes from './routes/health.routes';
 import authRoutes from './routes/auth.routes';
 import domainRoutes from './routes/domain.routes';
@@ -44,6 +45,20 @@ const limiter = rateLimit({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('dev'));
+
+// ─── Serverless DB connection middleware ───────────────────────────
+// Ensures MongoDB is connected before any route handler runs.
+// On Vercel cold starts, the connection doesn't exist yet; this
+// middleware creates it. On warm invocations, connectDB() returns
+// immediately from cache.
+app.use(async (_req, _res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
