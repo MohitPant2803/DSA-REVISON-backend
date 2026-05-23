@@ -35,7 +35,7 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
 
   const stack = env.NODE_ENV === 'production' ? null : err.stack;
   
-  logger.error(`❌ [${req.method}] ${req.originalUrl} >> ${message}`, err);
+  logger.error(`[${req.method}] ${req.originalUrl} >> ${message}`, err);
 
   errorResponse(res, statusCode, message, stack ? { stack } : null);
 };

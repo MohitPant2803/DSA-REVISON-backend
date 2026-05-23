@@ -16,7 +16,7 @@ export const connectDB = async (retryCount = 0): Promise<void> => {
   try {
     logger.info('Attempting to connect to MongoDB...');
     const conn = await mongoose.connect(env.MONGO_URI);
-    logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
+    logger.info(`MongoDB Connected: ${conn.connection.host}`);
 
     // Clean drop of legacy indexes to avoid compound index sparse duplicate bugs
     try {
@@ -36,17 +36,17 @@ export const connectDB = async (retryCount = 0): Promise<void> => {
         }
       }
     } catch (indexErr: any) {
-      logger.info(`⚠️ MongoDB Index repair info: ${indexErr.message}`);
+      logger.info(`MongoDB Index repair info: ${indexErr.message}`);
     }
   } catch (error: any) {
-    logger.error(`❌ Error connecting to MongoDB: ${error.message}`);
+    logger.error(`Error connecting to MongoDB: ${error.message}`);
     
     if (retryCount < MAX_RETRIES) {
       logger.info(`Retrying connection in ${RETRY_DELAY / 1000}s... (Attempt ${retryCount + 1} of ${MAX_RETRIES})`);
       await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
       await connectDB(retryCount + 1);
     } else {
-      logger.error('❌ Max connection retries reached. Exiting application.');
+      logger.error('Max connection retries reached. Exiting application.');
       process.exit(1);
     }
   }
