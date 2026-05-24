@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { successResponse, errorResponse } from '../utils/responseHandler';
 import { createPlaylistSchema, playlistItemActionSchema, queryPlaylistSchema, updatePlaylistSchema } from '../validators/playlist.validator';
+import Playlist from '../models/playlist.model';
 import {
   createPlaylistService,
   getUserPlaylistsService,
@@ -19,7 +20,18 @@ export interface AuthRequest extends Request {
 
 export const createPlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
   const payload = createPlaylistSchema.parse(req.body);
-  const playlist = await createPlaylistService(req.user!._id.toString(), payload);
+  const userId = req.user!._id.toString();
+  const role = req.user!.role || 'user';
+
+  const limits: Record<string, number> = { user: 4, admin: 6, superadmin: 10 };
+  const maxPlaylists = limits[role] || 4;
+
+  const currentCount = await Playlist.countDocuments({ userId });
+  if (currentCount >= maxPlaylists) {
+    return errorResponse(res, 400, `You have reached the limit of ${maxPlaylists} playlists for your account level (${role}).`);
+  }
+
+  const playlist = await createPlaylistService(userId, payload);
   return successResponse(res, 201, 'Playlist created successfully', { playlist });
 });
 
@@ -106,7 +118,19 @@ export const duplicatePlaylist = asyncHandler(async (req: AuthRequest, res: Resp
   if (['easy', 'medium', 'hard', 'skipped'].includes(req.params.id)) {
     return errorResponse(res, 400, 'Permanent smart playlists cannot be duplicated');
   }
-  const playlist = await duplicatePlaylistService(req.params.id, req.user!._id.toString());
+
+  const userId = req.user!._id.toString();
+  const role = req.user!.role || 'user';
+
+  const limits: Record<string, number> = { user: 4, admin: 6, superadmin: 10 };
+  const maxPlaylists = limits[role] || 4;
+
+  const currentCount = await Playlist.countDocuments({ userId });
+  if (currentCount >= maxPlaylists) {
+    return errorResponse(res, 400, `You have reached the limit of ${maxPlaylists} playlists for your account level (${role}).`);
+  }
+
+  const playlist = await duplicatePlaylistService(req.params.id, userId);
   if (!playlist) return errorResponse(res, 404, 'Playlist not found or unauthorized');
   return successResponse(res, 201, 'Playlist duplicated successfully', { playlist });
 });
