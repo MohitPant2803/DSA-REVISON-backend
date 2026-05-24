@@ -35,6 +35,7 @@ export const queryRevisionCards = async (
 
   const filter: Record<string, unknown> = {
     ...buildVisibilityFilter(actorRole),
+    isDeleted: { $ne: true },
   };
 
   if (search) {
@@ -195,7 +196,7 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, 
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid card ID');
   }
 
-  const card = await RevisionCard.findById(cardId)
+  const card = await RevisionCard.findOne({ _id: new Types.ObjectId(cardId), isDeleted: { $ne: true } })
     .populate(populateCreator)
     .populate('folderId', 'title icon color')
     .lean() as any;
@@ -246,6 +247,33 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, 
   return card;
 };
 
+const resolveFolderMetadata = async (folderId: Types.ObjectId | string) => {
+  const subfolderIds: Types.ObjectId[] = [];
+  const titles: string[] = [];
+  let tempFolder = await Folder.findById(folderId).lean() as any;
+  
+  if (!tempFolder) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Folder not found for path denormalization');
+  }
+
+  while (tempFolder) {
+    subfolderIds.unshift(tempFolder._id as Types.ObjectId);
+    titles.unshift(tempFolder.title);
+    if (tempFolder.parentFolderId) {
+      tempFolder = await Folder.findById(tempFolder.parentFolderId).lean() as any;
+    } else {
+      break;
+    }
+  }
+
+  return {
+    rootFolderId: subfolderIds[0],
+    rootFolderName: titles[0],
+    subfolderPath: '/' + titles.join('/'),
+    subfolderIds,
+  };
+};
+
 export const createRevisionCard = async (
   cardData: CreateRevisionCardInput,
   userId: Types.ObjectId
@@ -259,10 +287,13 @@ export const createRevisionCard = async (
     throw new ApiError(httpStatus.NOT_FOUND, 'Folder not found');
   }
 
+  const pathMetadata = await resolveFolderMetadata(cardData.folderId);
+
   const card = await RevisionCard.create({
     ...cardData,
     folderId: new Types.ObjectId(cardData.folderId),
     createdBy: userId,
+    ...pathMetadata,
   });
 
   // Append new card's ID to parent folder's cardIds
@@ -313,6 +344,9 @@ export const updateRevisionCardById = async (
       await Folder.findByIdAndUpdate(updateData.folderId, { $addToSet: { cardIds: card._id } });
     }
 
+    const pathMetadata = await resolveFolderMetadata(updateData.folderId);
+    Object.assign(card, pathMetadata);
+
     delete updateData.folderId;
   }
 
@@ -340,13 +374,9 @@ export const deleteRevisionCardById = async (
     throw new ApiError(httpStatus.FORBIDDEN, 'You are not authorized to delete this card');
   }
 
-  const folderId = card.folderId;
-  await card.deleteOne();
-
-  // Remove card ID from parent folder
-  if (folderId) {
-    await Folder.findByIdAndUpdate(folderId, { $pull: { cardIds: card._id } });
-  }
+  card.isDeleted = true;
+  card.deletedAt = new Date();
+  await card.save();
 };
 
 export const getCardsByFolder = async (
@@ -369,6 +399,7 @@ export const getRevisionCardsByIds = async (
   const filter = {
     _id: { $in: validIds },
     ...buildVisibilityFilter(actorRole),
+    isDeleted: { $ne: true },
   };
 
   const cards = await RevisionCard.find(filter)

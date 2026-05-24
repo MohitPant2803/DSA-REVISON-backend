@@ -20,6 +20,7 @@ import revisionRoutes from './routes/revision.routes';
 import folderRoutes from './routes/folder.routes';
 import userCardStateRoutes from './routes/userCardState.routes';
 import sessionQueueRoutes from './routes/sessionQueue.routes';
+import reelsFeedRoutes from './routes/reelsFeed.routes';
 
 const app: Application = express();
 
@@ -72,6 +73,7 @@ app.use('/api/revisions', revisionRoutes);
 app.use('/api/folders', folderRoutes);
 app.use('/api/user-card-states', userCardStateRoutes);
 app.use('/api/sessions', sessionQueueRoutes);
+app.use('/api/reels', reelsFeedRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use(notFound);

@@ -27,6 +27,12 @@ export interface IRevisionCard extends Document {
   visibility: CardVisibility;
   order: number;
   slides?: ISlide[];
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  rootFolderId?: Types.ObjectId;
+  rootFolderName?: string;
+  subfolderPath?: string;
+  subfolderIds?: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +94,12 @@ const RevisionCardSchema = new Schema<IRevisionCard>(
       ],
       default: undefined,
     },
+    isDeleted: { type: Boolean, default: false, index: true },
+    deletedAt: { type: Date },
+    rootFolderId: { type: Schema.Types.ObjectId, ref: 'Folder', index: true },
+    rootFolderName: { type: String, trim: true },
+    subfolderPath: { type: String, trim: true },
+    subfolderIds: [{ type: Schema.Types.ObjectId, ref: 'Folder' }],
   },
   {
     timestamps: true,
@@ -99,6 +111,8 @@ RevisionCardSchema.index({ topic: 1, difficulty: 1 });
 RevisionCardSchema.index({ tags: 1 });
 RevisionCardSchema.index({ createdBy: 1 });
 RevisionCardSchema.index({ folderId: 1, order: 1 });
+RevisionCardSchema.index({ rootFolderId: 1, isDeleted: 1 });
+RevisionCardSchema.index({ isDeleted: 1, updatedAt: -1 });
 RevisionCardSchema.index({ title: 'text', topic: 'text', explanation: 'text' });
 
 const RevisionCard = model<IRevisionCard>('RevisionCard', RevisionCardSchema);
