@@ -228,9 +228,11 @@ export const generateReelsQueue = async (userId: string): Promise<IUserReelSessi
     });
 
     cards.forEach(card => {
-      const rootIdStr = card.rootFolderId.toString();
-      if (folderCardGroups[rootIdStr]) {
-        folderCardGroups[rootIdStr].push(card._id as Types.ObjectId);
+      if (card.rootFolderId) {
+        const rootIdStr = card.rootFolderId.toString();
+        if (folderCardGroups[rootIdStr]) {
+          folderCardGroups[rootIdStr].push(card._id as Types.ObjectId);
+        }
       }
     });
 
@@ -319,7 +321,7 @@ export const generateReelsQueue = async (userId: string): Promise<IUserReelSessi
 // 4. Retrieve session slice window with soft-delete skipped refill loops
 export const getSessionSlice = async (userId: string): Promise<any> => {
   const uid = new Types.ObjectId(userId);
-  let session = await UserReelSession.findOne({ userId: uid });
+  let session: any = await UserReelSession.findOne({ userId: uid });
 
   // Manual Expiry Validation: do not rely solely on MongoDB background TTL polling
   const isExpired = session && session.expiresAt.getTime() <= Date.now();
@@ -335,6 +337,10 @@ export const getSessionSlice = async (userId: string): Promise<any> => {
       // Soft Invalidation: trigger async background regeneration, serve current in the meantime
       generateReelsQueue(userId).catch(err => console.error('[Async Regeneration Failure]', err));
     }
+  }
+
+  if (!session) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to initialize reels session');
   }
 
   const queueLength = session.queue.length;
