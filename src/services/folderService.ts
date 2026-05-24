@@ -16,8 +16,18 @@ async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[])
   const foldersWithCounts = [];
   for (const folder of folders) {
     const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
-    const folderIds = [folder._id, ...childFolders.map((f) => f._id)];
-    const cardCount = await RevisionCard.countDocuments({ folderId: { $in: folderIds }, isDeleted: false });
+    const cardCount = await RevisionCard.countDocuments({
+      $and: [
+        { isDeleted: false },
+        {
+          $or: [
+            { folderId: folder._id },
+            { subfolderIds: folder._id },
+            { rootFolderId: folder._id }
+          ]
+        }
+      ]
+    });
     foldersWithCounts.push({
       ...folder,
       cardCount,
@@ -87,9 +97,19 @@ export const getFolderById = async (folderId: string, actorRole?: UserRole) => {
     throw new ApiError(httpStatus.FORBIDDEN, 'You do not have access to this folder');
   }
 
+  const cardCount = await RevisionCard.countDocuments({
+    $and: [
+      { isDeleted: false },
+      {
+        $or: [
+          { folderId: folder._id },
+          { subfolderIds: folder._id },
+          { rootFolderId: folder._id }
+        ]
+      }
+    ]
+  });
   const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
-  const folderIds = [folder._id, ...childFolders.map((f) => f._id)];
-  const cardCount = await RevisionCard.countDocuments({ folderId: { $in: folderIds }, isDeleted: false });
   return { ...folder, cardCount, hasSubfolders: childFolders.length > 0 };
 };
 
