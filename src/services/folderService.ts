@@ -17,7 +17,7 @@ async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[])
   for (const folder of folders) {
     const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
     const folderIds = [folder._id, ...childFolders.map((f) => f._id)];
-    const cardCount = await RevisionCard.countDocuments({ folderId: { $in: folderIds } });
+    const cardCount = await RevisionCard.countDocuments({ folderId: { $in: folderIds }, isDeleted: false });
     foldersWithCounts.push({
       ...folder,
       cardCount,
@@ -89,7 +89,7 @@ export const getFolderById = async (folderId: string, actorRole?: UserRole) => {
 
   const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
   const folderIds = [folder._id, ...childFolders.map((f) => f._id)];
-  const cardCount = await RevisionCard.countDocuments({ folderId: { $in: folderIds } });
+  const cardCount = await RevisionCard.countDocuments({ folderId: { $in: folderIds }, isDeleted: false });
   return { ...folder, cardCount, hasSubfolders: childFolders.length > 0 };
 };
 
