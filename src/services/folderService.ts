@@ -13,28 +13,46 @@ import { canManageResource, canReadResource, UserRole } from '../utils/permissio
 const populateCreator = { path: 'createdBy', select: 'name email profilePicture role' };
 
 async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[]) {
-  const foldersWithCounts = [];
-  for (const folder of folders) {
-    const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
-    const cardCount = await RevisionCard.countDocuments({
-      $and: [
-        { isDeleted: false },
-        {
-          $or: [
-            { folderId: folder._id },
-            { subfolderIds: folder._id },
-            { rootFolderId: folder._id }
+  if (folders.length === 0) return [];
+  const folderIds = folders.map(f => f._id);
+
+  // Query 1: Batch check which folders have child subfolders in exactly ONE query
+  const childFoldersList = await Folder.find({ parentFolderId: { $in: folderIds } })
+    .select('parentFolderId')
+    .lean();
+  const subfoldersParentSet = new Set(childFoldersList.map(c => c.parentFolderId?.toString()));
+
+  // Query 2: Batch count unique revision cards per folder using set union to prevent double-counting
+  const cardCountsAggregation = await RevisionCard.aggregate([
+    { $match: { isDeleted: false } },
+    {
+      $project: {
+        folderAssociations: {
+          $setUnion: [
+            [ { $ifNull: [ "$folderId", null ] }, { $ifNull: [ "$rootFolderId", null ] } ],
+            { $ifNull: [ "$subfolderIds", [] ] }
           ]
         }
-      ]
-    });
-    foldersWithCounts.push({
+      }
+    },
+    { $unwind: "$folderAssociations" },
+    { $match: { folderAssociations: { $in: folderIds } } },
+    { $group: { _id: "$folderAssociations", count: { $sum: 1 } } }
+  ]);
+
+  const countMap = new Map<string, number>(
+    cardCountsAggregation.map((item: any) => [item._id.toString(), item.count])
+  );
+
+  // Assemble final results in-memory
+  return folders.map(folder => {
+    const folderIdStr = folder._id.toString();
+    return {
       ...folder,
-      cardCount,
-      hasSubfolders: childFolders.length > 0,
-    });
-  }
-  return foldersWithCounts;
+      cardCount: countMap.get(folderIdStr) || 0,
+      hasSubfolders: subfoldersParentSet.has(folderIdStr),
+    };
+  });
 }
 
 function buildVisibilityFilter(actorRole?: UserRole) {

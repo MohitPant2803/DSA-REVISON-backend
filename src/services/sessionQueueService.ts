@@ -38,31 +38,68 @@ const getFolderCardIdsRecursively = async (
   folderId: mongoose.Types.ObjectId | string
 ): Promise<mongoose.Types.ObjectId[]> => {
   const rootId = typeof folderId === 'string' ? new Types.ObjectId(folderId) : folderId;
-  const rootFolder = await Folder.findById(rootId).lean();
+
+  // A. Fetch root and all descendant folders up to depth 4 in exactly ONE query
+  const foldersWithDescendants = await Folder.aggregate([
+    { $match: { _id: rootId } },
+    {
+      $graphLookup: {
+        from: 'folders',
+        startWith: '$_id',
+        connectFromField: '_id',
+        connectToField: 'parentFolderId',
+        maxDepth: 4, // Depth limit matches folder->folder->folder->folder->cards
+        as: 'descendants'
+      }
+    }
+  ]);
+
+  const rootFolder = foldersWithDescendants[0];
   if (!rootFolder) return [];
 
-  // Helper to recursively fetch child folders in order
-  const getDescendants = async (fid: mongoose.Types.ObjectId): Promise<any[]> => {
-    const children = await Folder.find({ parentFolderId: fid }).lean();
-    const sorted = children.sort((a, b) => (a.order || 0) - (b.order || 0));
-    const list: any[] = [];
-    for (const child of sorted) {
-      list.push(child);
-      const sub = await getDescendants(child._id as mongoose.Types.ObjectId);
-      list.push(...sub);
-    }
-    return list;
-  };
-
-  const allFolders = [rootFolder, ...(await getDescendants(rootId))];
+  const descendants = (rootFolder as any).descendants || [];
+  const allFolders = [rootFolder, ...descendants];
   const folderIds = allFolders.map((f) => f._id);
 
-  // Fetch all revision cards matching these folders
+  // B. Build map of parent-child relationships for quick in-memory O(N) ordering
+  const folderMap = new Map(allFolders.map(f => [f._id.toString(), f]));
+  const childMap = new Map<string, any[]>();
+  
+  for (const f of allFolders) {
+    if (f.parentFolderId) {
+      const parentIdStr = f.parentFolderId.toString();
+      if (!childMap.has(parentIdStr)) {
+        childMap.set(parentIdStr, []);
+      }
+      childMap.get(parentIdStr)!.push(f);
+    }
+  }
+
+  // Sort child lists by order field
+  for (const [_, list] of childMap.entries()) {
+    list.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+
+  // C. Perform hierarchical depth-first traversal in-memory (O(N) where N <= 50)
+  const orderedFolders: any[] = [];
+  const traverse = (currentIdStr: string) => {
+    const current = folderMap.get(currentIdStr);
+    if (current) {
+      orderedFolders.push(current);
+      const children = childMap.get(currentIdStr) || [];
+      for (const child of children) {
+        traverse(child._id.toString());
+      }
+    }
+  };
+  traverse(rootId.toString());
+
+  // D. Fetch all cards matching the folders in a single query
   const cards = await RevisionCard.find({ folderId: { $in: folderIds } })
     .select('_id folderId order')
     .lean();
 
-  // Group cards by folder ID to maintain hierarchy order
+  // E. Group cards by folder
   const cardsByFolder: Record<string, typeof cards> = {};
   for (const card of cards) {
     const fidStr = card.folderId.toString();
@@ -72,11 +109,11 @@ const getFolderCardIdsRecursively = async (
     cardsByFolder[fidStr].push(card);
   }
 
+  // F. Accumulate sorted card IDs matching hierarchical folder path
   const sortedCardIds: mongoose.Types.ObjectId[] = [];
-  for (const f of allFolders) {
+  for (const f of orderedFolders) {
     const fidStr = f._id.toString();
     const folderCards = cardsByFolder[fidStr] || [];
-    // Sort folder cards by order
     const sortedFolderCards = folderCards.sort((a, b) => (a.order || 0) - (b.order || 0));
     for (const card of sortedFolderCards) {
       sortedCardIds.push(card._id as mongoose.Types.ObjectId);
