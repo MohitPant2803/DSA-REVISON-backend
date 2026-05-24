@@ -456,7 +456,6 @@ export const updateSessionIndex = async (
     // Throttle guard: only allow pre-generation max once every 3 minutes
     const timeSinceLastUpdate = Date.now() - session.updatedAt.getTime();
     if (timeSinceLastUpdate > 3 * 60 * 1000) {
-      console.log(`[Pre-Regeneration] User reached index ${incomingIndex}/${queueLength}. Triggering async replenishment...`);
       generateReelsQueue(userId).catch(err => console.error('[Pre-Regeneration Failure]', err));
     }
   }
