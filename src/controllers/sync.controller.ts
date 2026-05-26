@@ -25,7 +25,7 @@ import {
   updateFolderById 
 } from '../services/folderService';
 
-const CURRENT_DB_VERSION = 'striver-sde-sheet-v3';
+const CURRENT_DB_VERSION = 'striver-sde-sheet-v4';
 
 export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Response) => {
   const sinceStr = req.query.since as string;
