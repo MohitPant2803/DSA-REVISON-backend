@@ -7,10 +7,23 @@ import Folder from '../models/folder.model';
 import Playlist from '../models/playlist.model';
 import UserQuestionProgress from '../models/userQuestionProgress.model';
 import Progress from '../models/progress.model';
+import ProcessedMutation from '../models/processedMutation.model';
 import { AuthRequest } from './playlist.controller';
 import { updateUserQuestionProgress } from '../services/userQuestionProgress.service';
 import { updateProgressService, reorderLikesService } from '../services/progress.service';
-import { addItemToPlaylistService, removeItemFromPlaylistService, reorderPlaylistService } from '../services/playlist.service';
+import { 
+  addItemToPlaylistService, 
+  removeItemFromPlaylistService, 
+  reorderPlaylistService,
+  createPlaylistService,
+  deletePlaylistService,
+  updatePlaylistService
+} from '../services/playlist.service';
+import { 
+  createFolder, 
+  deleteFolderById, 
+  updateFolderById 
+} from '../services/folderService';
 
 export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Response) => {
   const sinceStr = req.query.since as string;
@@ -45,11 +58,22 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
   }
 
   const userId = req.user!._id.toString();
+  const role = req.user!.role || 'user';
 
   // Process actions sequentially (Last-Write-Wins based on offline timestamps)
   // We wrap them in try-catch to ensure one bad action doesn't crash the entire batch sync!
   for (const item of actions) {
-    const { action, payload, timestamp } = item;
+    const { id: mutationId, action, payload } = item;
+
+    // Idempotency check: Skip already-processed enqueued action IDs (UUID v4)
+    if (mutationId) {
+      const alreadyProcessed = await ProcessedMutation.findOne({ mutationId });
+      if (alreadyProcessed) {
+        console.log(`[Batch Sync Idempotency] Skipping already processed action ID: ${mutationId}`);
+        continue;
+      }
+    }
+
     try {
       console.log(`[Batch Sync Action] Processing offline action: ${action} | User: ${userId}`);
 
@@ -76,6 +100,11 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
         case 'TOGGLE_PLAYLIST_ITEM': {
           const { playlistId, cardId, value } = payload;
           if (playlistId && cardId) {
+            // Reconcile client temporary playlist IDs silently
+            if (playlistId.startsWith('temp-')) {
+              console.log(`[Batch Sync] Skipping playlist toggle for temp playlist: ${playlistId}. Re-syncing later.`);
+              break;
+            }
             if (value) {
               await addItemToPlaylistService(playlistId, userId, { revisionCardId: cardId }).catch(() => {});
             } else {
@@ -88,6 +117,7 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
         case 'REORDER_PLAYLIST': {
           const { playlistId, cardIds } = payload;
           if (playlistId && Array.isArray(cardIds)) {
+            if (playlistId.startsWith('temp-')) break;
             await reorderPlaylistService(playlistId, userId, cardIds);
           }
           break;
@@ -101,9 +131,69 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
           break;
         }
 
+        case 'CREATE_PLAYLIST': {
+          const { name, color1, color2 } = payload;
+          if (name) {
+            // Idempotency: verify this playlist does not already exist
+            const existing = await Playlist.findOne({ userId, name });
+            if (!existing) {
+              await createPlaylistService(userId, { name, color1, color2 });
+            }
+          }
+          break;
+        }
+
+        case 'DELETE_PLAYLIST': {
+          const { playlistId } = payload;
+          if (playlistId && !playlistId.startsWith('temp-')) {
+            await deletePlaylistService(playlistId, userId).catch(() => {});
+          }
+          break;
+        }
+
+        case 'UPDATE_PLAYLIST': {
+          const { playlistId, name } = payload;
+          if (playlistId && name && !playlistId.startsWith('temp-')) {
+            await updatePlaylistService(playlistId, userId, { name }).catch(() => {});
+          }
+          break;
+        }
+
+        case 'CREATE_FOLDER': {
+          const { dto } = payload;
+          if (dto && dto.title) {
+            const existing = await Folder.findOne({ createdBy: userId, title: dto.title });
+            if (!existing) {
+              await createFolder(dto, new mongoose.Types.ObjectId(userId));
+            }
+          }
+          break;
+        }
+
+        case 'DELETE_FOLDER': {
+          const { folderId } = payload;
+          if (folderId && !folderId.startsWith('temp-')) {
+            await deleteFolderById(folderId, new mongoose.Types.ObjectId(userId), role).catch(() => {});
+          }
+          break;
+        }
+
+        case 'UPDATE_FOLDER': {
+          const { folderId, updateData } = payload;
+          if (folderId && updateData && !folderId.startsWith('temp-')) {
+            await updateFolderById(folderId, updateData, new mongoose.Types.ObjectId(userId), role).catch(() => {});
+          }
+          break;
+        }
+
         default:
           console.warn(`[Batch Sync] Unknown/unsupported action type: ${action}`);
           break;
+      }
+
+      // Mark this mutation as successfully processed
+      if (mutationId) {
+        await ProcessedMutation.create({ mutationId, userId }).catch(() => {});
       }
     } catch (err: any) {
       console.error(`[Batch Sync Action Error] Failed processing: ${action} | Error:`, err.message);

@@ -322,16 +322,11 @@ export const getSessionCardsSlice = async (
   windowSize = 5
 ) => {
   const session = await getSessionQueue(userId, sessionId);
-  const totalCards = session.orderedCardIds.length;
-  const currentIdx = session.currentIndex;
 
-  // Compute nearby indices to return (preloading 2 next, 1 previous, etc.)
-  const startIdx = Math.max(0, currentIdx - 2);
-  const endIdx = Math.min(totalCards - 1, currentIdx + 2);
+  // Fetch ALL card IDs to guarantee absolute zero latency/buffering during reels swipe
+  const cardSliceIds = session.orderedCardIds;
 
-  const cardSliceIds = session.orderedCardIds.slice(startIdx, endIdx + 1);
-
-  // Fetch only cards in this slice window
+  // Fetch cards in this session
   const cards = await RevisionCard.find({ _id: { $in: cardSliceIds } }).lean();
 
   // Populate progress fields for the cards

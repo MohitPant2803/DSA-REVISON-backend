@@ -11,11 +11,30 @@ export const createPlaylistService = async (userId: string, data: any): Promise<
 
 export const getUserPlaylistsService = async (userId: string): Promise<any[]> => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  const getUniqueCount = async (matchQuery: any) => {
+    const result = await UserQuestionProgress.aggregate([
+      { $match: matchQuery },
+      {
+        $lookup: {
+          from: 'revisioncards',
+          localField: 'questionId',
+          foreignField: '_id',
+          as: 'card',
+        },
+      },
+      { $unwind: '$card' },
+      { $group: { _id: { $trim: { input: { $toLower: '$card.title' } } } } },
+      { $count: 'uniqueCount' },
+    ]);
+    return result[0]?.uniqueCount ?? 0;
+  };
+
   const [easyCount, mediumCount, hardCount, skippedCount, customPlaylists] = await Promise.all([
-    UserQuestionProgress.countDocuments({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'easy' }),
-    UserQuestionProgress.countDocuments({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'medium' }),
-    UserQuestionProgress.countDocuments({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'hard' }),
-    UserQuestionProgress.countDocuments({ userId: userObjectId, attemptStatus: 'skipped' }),
+    getUniqueCount({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'easy' }),
+    getUniqueCount({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'medium' }),
+    getUniqueCount({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'hard' }),
+    getUniqueCount({ userId: userObjectId, attemptStatus: 'skipped' }),
     Playlist.find({ userId }).sort('-updatedAt').lean(),
   ]);
 
@@ -101,7 +120,18 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
       .map((p: any) => p.questionId)
       .filter((c: any) => c && c._id);
 
-    const cardIdsForPop = cards.map((c: any) => c._id);
+    const seenTitles = new Set();
+    const uniqueCards = [];
+    for (const card of cards) {
+      if (!card.title) continue;
+      const titleKey = card.title.trim().toLowerCase();
+      if (!seenTitles.has(titleKey)) {
+        seenTitles.add(titleKey);
+        uniqueCards.push(card);
+      }
+    }
+
+    const cardIdsForPop = uniqueCards.map((c: any) => c._id);
     const [progressList, userStates, questionProgressList] = await Promise.all([
       Progress.find({
         userId: userObjectId,
@@ -121,7 +151,7 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
     const statesMap = new Map(userStates.map((s: any) => [s.cardId?.toString(), s]));
     const qProgressMap = new Map(questionProgressList.map((qp: any) => [qp.questionId?.toString(), qp]));
 
-    cards.forEach((card: any) => {
+    uniqueCards.forEach((card: any) => {
       const prog = progressMap.get(card._id.toString());
       const state = statesMap.get(card._id.toString());
       const qp = qProgressMap.get(card._id.toString());
@@ -139,7 +169,7 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
         : null;
     });
 
-    const cardIds = cards.map((c: any) => c._id.toString());
+    const cardIds = uniqueCards.map((c: any) => c._id.toString());
 
     const name = playlistId.charAt(0).toUpperCase() + playlistId.slice(1);
 
@@ -149,7 +179,7 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
       name,
       title: name,
       description: `Dynamic list of cards you marked as ${name}`,
-      itemCount: cards.length,
+      itemCount: uniqueCards.length,
       completedLoops: 0,
       totalCardsViewed: 0,
       color1: playlistId === 'easy' ? '#10B981' : playlistId === 'medium' ? '#F59E0B' : playlistId === 'hard' ? '#EF4444' : '#64748B',
@@ -160,7 +190,7 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
     return {
       playlist,
       cardIds,
-      items: cards,
+      items: uniqueCards,
     };
   }
 
