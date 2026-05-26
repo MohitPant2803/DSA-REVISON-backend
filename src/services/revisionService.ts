@@ -47,14 +47,23 @@ export const queryRevisionCards = async (
   if (difficulty) {
     filter.difficulty = difficulty;
   }
+  let folderCardIds: Types.ObjectId[] | null = null;
   if (folderId) {
     if (!Types.ObjectId.isValid(folderId)) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
     }
     // Fetch all child subfolder IDs recursively to support sheet-level and folder-level queries
-    const childFolders = await Folder.find({ parentFolderId: new Types.ObjectId(folderId) }).select('_id');
-    const folderIds = [new Types.ObjectId(folderId), ...childFolders.map((f) => f._id)];
-    filter.folderId = { $in: folderIds };
+    const childFolders = await Folder.find({ parentFolderId: new Types.ObjectId(folderId) }).select('_id cardIds');
+    const rootFolder = await Folder.findById(folderId).select('_id cardIds');
+    const allFolders = [...(rootFolder ? [rootFolder] : []), ...childFolders];
+    
+    folderCardIds = [];
+    for (const f of allFolders) {
+      if (f.cardIds) {
+        folderCardIds.push(...f.cardIds);
+      }
+    }
+    filter._id = { $in: folderCardIds };
   }
   if (tags) {
     filter.tags = { $in: tags.split(',').map((t) => t.trim()).filter(Boolean) };
@@ -131,6 +140,17 @@ export const queryRevisionCards = async (
   }
 
   const results = await dbQuery.lean();
+
+  // If we filtered by folder cards and no custom sort option was provided, sort the results in-memory 
+  // to match the exact order of the cards inside the folder's cardIds array!
+  if (folderCardIds && !sort) {
+    const cardIdStrList = folderCardIds.map(id => id.toString());
+    results.sort((a: any, b: any) => {
+      const idxA = cardIdStrList.indexOf(a._id.toString());
+      const idxB = cardIdStrList.indexOf(b._id.toString());
+      return idxA - idxB;
+    });
+  }
 
   if (userId) {
     const cardIds = results.map((r) => r._id);

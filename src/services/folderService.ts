@@ -16,6 +16,35 @@ async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[])
   if (folders.length === 0) return [];
   const folderIds = folders.map(f => f._id);
 
+  // 1. Fetch ALL folders to build parent-child descendant tree in-memory
+  const allFolders = await Folder.find({}).select('_id parentFolderId').lean();
+  
+  const childrenMap = new Map<string, string[]>();
+  allFolders.forEach(f => {
+    if (f.parentFolderId) {
+      const pId = f.parentFolderId.toString();
+      const existing = childrenMap.get(pId) || [];
+      existing.push(f._id.toString());
+      childrenMap.set(pId, existing);
+    }
+  });
+
+  function getDescendantIds(folderId: string): string[] {
+    const ids: string[] = [folderId];
+    const queue = [folderId];
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      const children = childrenMap.get(curr) || [];
+      for (const child of children) {
+        if (!ids.includes(child)) {
+          ids.push(child);
+          queue.push(child);
+        }
+      }
+    }
+    return ids;
+  }
+
   // Query 1: Batch check which folders have child subfolders in exactly ONE query
   const childFoldersList = await Folder.find({ parentFolderId: { $in: folderIds } })
     .select('parentFolderId')
@@ -36,20 +65,33 @@ async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[])
       }
     },
     { $unwind: "$folderAssociations" },
-    { $match: { folderAssociations: { $in: folderIds } } },
     { $group: { _id: "$folderAssociations", count: { $sum: 1 } } }
   ]);
 
-  const countMap = new Map<string, number>(
-    cardCountsAggregation.map((item: any) => [item._id.toString(), item.count])
-  );
+  const directCountMap = new Map<string, number>();
+  for (const item of cardCountsAggregation) {
+    if (item._id != null) {
+      try {
+        directCountMap.set(item._id.toString(), item.count);
+      } catch {
+        // skip items with non-stringifiable _id
+      }
+    }
+  }
 
   // Assemble final results in-memory
   return folders.map(folder => {
     const folderIdStr = folder._id.toString();
+    const descendants = getDescendantIds(folderIdStr);
+    
+    let recursiveCount = 0;
+    descendants.forEach(dId => {
+      recursiveCount += directCountMap.get(dId) || 0;
+    });
+
     return {
       ...folder,
-      cardCount: countMap.get(folderIdStr) || 0,
+      cardCount: recursiveCount,
       hasSubfolders: subfoldersParentSet.has(folderIdStr),
     };
   });
@@ -115,17 +157,40 @@ export const getFolderById = async (folderId: string, actorRole?: UserRole) => {
     throw new ApiError(httpStatus.FORBIDDEN, 'You do not have access to this folder');
   }
 
-  const cardCount = await RevisionCard.countDocuments({
-    $and: [
-      { isDeleted: false },
-      {
-        $or: [
-          { folderId: folder._id },
-          { subfolderIds: folder._id },
-          { rootFolderId: folder._id }
-        ]
+  // Fetch all folders to build parent-child descendant tree recursively
+  const allFolders = await Folder.find({}).select('_id parentFolderId').lean();
+  const childrenMap = new Map<string, string[]>();
+  allFolders.forEach(f => {
+    if (f.parentFolderId) {
+      const pId = f.parentFolderId.toString();
+      const existing = childrenMap.get(pId) || [];
+      existing.push(f._id.toString());
+      childrenMap.set(pId, existing);
+    }
+  });
+
+  function getDescendantIds(fid: string): string[] {
+    const ids: string[] = [fid];
+    const queue = [fid];
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      const children = childrenMap.get(curr) || [];
+      for (const child of children) {
+        if (!ids.includes(child)) {
+          ids.push(child);
+          queue.push(child);
+        }
       }
-    ]
+    }
+    return ids;
+  }
+
+  const descendants = getDescendantIds(folder._id.toString());
+  const descendantObjectIds = descendants.map(id => new Types.ObjectId(id));
+
+  const cardCount = await RevisionCard.countDocuments({
+    isDeleted: false,
+    folderId: { $in: descendantObjectIds }
   });
   const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
   return { ...folder, cardCount, hasSubfolders: childFolders.length > 0 };

@@ -25,6 +25,8 @@ import {
   updateFolderById 
 } from '../services/folderService';
 
+const CURRENT_DB_VERSION = 'striver-sde-sheet-v3';
+
 export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Response) => {
   const sinceStr = req.query.since as string;
   const since = sinceStr ? new Date(sinceStr) : new Date(0);
@@ -41,6 +43,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
 
   return successResponse(res, 200, 'Sync delta fetched successfully', {
     timestamp: new Date(),
+    dbVersion: CURRENT_DB_VERSION,
     delta: {
       cards,
       folders,

@@ -94,29 +94,33 @@ const getFolderCardIdsRecursively = async (
   };
   traverse(rootId.toString());
 
-  // D. Fetch all cards matching the folders in a single query
-  const cards = await RevisionCard.find({ folderId: { $in: folderIds } })
+  // D. Gather all card IDs from folders
+  const allCardIds: mongoose.Types.ObjectId[] = [];
+  const cardIdToFolderMap = new Map<string, string>();
+  for (const f of allFolders) {
+    const fCardIds = f.cardIds || [];
+    for (const cid of fCardIds) {
+      allCardIds.push(cid);
+      cardIdToFolderMap.set(cid.toString(), f._id.toString());
+    }
+  }
+
+  // Fetch all cards matching the gathered card IDs in a single query
+  const cards = await RevisionCard.find({ _id: { $in: allCardIds }, isDeleted: { $ne: true } })
     .select('_id folderId order')
     .lean();
 
-  // E. Group cards by folder
-  const cardsByFolder: Record<string, typeof cards> = {};
-  for (const card of cards) {
-    const fidStr = card.folderId.toString();
-    if (!cardsByFolder[fidStr]) {
-      cardsByFolder[fidStr] = [];
-    }
-    cardsByFolder[fidStr].push(card);
-  }
+  // E. Set of existing card IDs in database
+  const cardsSet = new Set(cards.map(c => c._id.toString()));
 
-  // F. Accumulate sorted card IDs matching hierarchical folder path
+  // F. Accumulate sorted card IDs matching hierarchical folder path by preserving folder-specific cardIds order!
   const sortedCardIds: mongoose.Types.ObjectId[] = [];
   for (const f of orderedFolders) {
-    const fidStr = f._id.toString();
-    const folderCards = cardsByFolder[fidStr] || [];
-    const sortedFolderCards = folderCards.sort((a, b) => (a.order || 0) - (b.order || 0));
-    for (const card of sortedFolderCards) {
-      sortedCardIds.push(card._id as mongoose.Types.ObjectId);
+    const fCardIds = f.cardIds || [];
+    for (const cid of fCardIds) {
+      if (cardsSet.has(cid.toString())) {
+        sortedCardIds.push(cid);
+      }
     }
   }
 

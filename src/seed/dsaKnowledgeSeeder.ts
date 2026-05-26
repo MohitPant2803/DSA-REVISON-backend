@@ -5,6 +5,13 @@ import User from '../models/user.model';
 import Folder from '../models/folder.model';
 import RevisionCard, { Complexity } from '../models/revisionCard.model';
 
+import { STRIVER_STRINGS_QUESTIONS } from './striver/strings';
+import { STRIVER_TRIES_QUESTIONS } from './striver/trie';
+import { STRIVER_BINARY_TREES_QUESTIONS } from './striver/binaryTrees';
+import { STRIVER_BST_QUESTIONS } from './striver/bst';
+import { STRIVER_GRAPHS_QUESTIONS } from './striver/graphs';
+import { STRIVER_DP_QUESTIONS } from './striver/dp';
+
 // Interface for defined seed questions
 interface SeedQuestion {
   title: string;
@@ -2588,113 +2595,543 @@ function canPlace(stalls, cows, dist) {
 };
 
 // Programmatic Slide Compiler
-// Dynamically constructs top-notch, highly engaging, non-AI-feeling slides for seeded questions.
-// Scaled beautifully: Easy = 3 slides, Medium = 5 slides, Hard = 7 slides.
+// C++ Syntax Highlighting and Code Translation Helper
+const translateJsToCpp = (jsCode: string, title: string): string => {
+  let cpp = jsCode.trim();
+
+  // If already C++, return as is
+  if (cpp.includes('#include') || cpp.includes('vector<') || cpp.includes('std::') || cpp.includes('ListNode*') || cpp.includes('std::vector')) {
+    return cpp;
+  }
+
+  // Handle specific question manually to guarantee 100% perfect C++ syntax for key ones!
+  const manualCppMap: Record<string, string> = {
+    'Set Matrix Zeroes': `void setZeroes(vector<vector<int>>& matrix) {
+    int col0 = 1;
+    int rows = matrix.size(), cols = matrix[0].size();
+    
+    for (int i = 0; i < rows; i++) {
+        if (matrix[i][0] == 0) col0 = 0;
+        for (int j = 1; j < cols; j++) {
+            if (matrix[i][j] == 0) {
+                matrix[i][0] = 0;
+                matrix[0][j] = 0;
+            }
+        }
+    }
+    
+    for (int i = rows - 1; i >= 0; i--) {
+        for (int j = cols - 1; j >= 1; j--) {
+            if (matrix[i][0] == 0 || matrix[0][j] == 0) {
+                matrix[i][j] = 0;
+            }
+        }
+        if (col0 == 0) matrix[i][0] = 0;
+    }
+}`,
+    "Pascal's Triangle": `vector<vector<int>> generate(int numRows) {
+    vector<vector<int>> triangle;
+    for (int i = 0; i < numRows; i++) {
+        vector<int> row(i + 1, 1);
+        for (int j = 1; j < i; j++) {
+            row[j] = triangle[i - 1][j - 1] + triangle[i - 1][j];
+        }
+        triangle.push_back(row);
+    }
+    return triangle;
+}`,
+    'Next Permutation': `void nextPermutation(vector<int>& nums) {
+    int i = nums.size() - 2;
+    while (i >= 0 && nums[i] >= nums[i + 1]) i--;
+    if (i >= 0) {
+        int j = nums.size() - 1;
+        while (nums[j] <= nums[i]) j--;
+        swap(nums[i], nums[j]);
+    }
+    reverse(nums.begin() + i + 1, nums.end());
+}`,
+    "Kadane's Algorithm": `int maxSubArray(vector<int>& nums) {
+    int maxSoFar = nums[0];
+    int currentMax = nums[0];
+    for (size_t i = 1; i < nums.size(); i++) {
+        currentMax = max(nums[i], currentMax + nums[i]);
+        maxSoFar = max(maxSoFar, currentMax);
+    }
+    return maxSoFar;
+}`,
+    'Sort Colors (Sort 0s, 1s, 2s)': `void sortColors(vector<int>& nums) {
+    int low = 0, mid = 0, high = nums.size() - 1;
+    while (mid <= high) {
+        if (nums[mid] == 0) {
+            swap(nums[low], nums[mid]);
+            low++; mid++;
+        } else if (nums[mid] == 1) {
+            mid++;
+        } else {
+            swap(nums[mid], nums[high]);
+            high--;
+        }
+    }
+}`,
+    'Stock Buy and Sell': `int maxProfit(vector<int>& prices) {
+    int minPrice = INT_MAX;
+    int maxProfit = 0;
+    for (int price : prices) {
+        if (price < minPrice) {
+            minPrice = price;
+        } else {
+            maxProfit = max(maxProfit, price - minPrice);
+        }
+    }
+    return maxProfit;
+}`,
+    'Rotate Image/Matrix': `void rotate(vector<vector<int>>& matrix) {
+    int n = matrix.size();
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            swap(matrix[i][j], matrix[j][i]);
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        reverse(matrix[i].begin(), matrix[i].end());
+    }
+}`,
+    'Merge Overlapping Subintervals': `vector<vector<int>> merge(vector<vector<int>>& intervals) {
+    if (intervals.size() <= 1) return intervals;
+    sort(intervals.begin(), intervals.end());
+    vector<vector<int>> merged = {intervals[0]};
+    for (size_t i = 1; i < intervals.size(); i++) {
+        auto& last = merged.back();
+        auto& current = intervals[i];
+        if (current[0] <= last[1]) {
+            last[1] = max(last[1], current[1]);
+        } else {
+            merged.push_back(current);
+        }
+    }
+    return merged;
+}`,
+    'Merge Sorted Array Without Extra Space': `void merge(vector<int>& nums1, int m, vector<int>& nums2, int n) {
+    int i = m - 1, j = n - 1, k = m + n - 1;
+    while (j >= 0) {
+        if (i >= 0 && nums1[i] > nums2[j]) {
+            nums1[k--] = nums1[i--];
+        } else {
+            nums1[k--] = nums2[j--];
+        }
+    }
+}`,
+    'Find the Duplicate Number': `int findDuplicate(vector<int>& nums) {
+    int slow = nums[0], fast = nums[0];
+    do {
+        slow = nums[slow];
+        fast = nums[nums[fast]];
+    } while (slow != fast);
+    slow = nums[0];
+    while (slow != fast) {
+        slow = nums[slow];
+        fast = nums[fast];
+    }
+    return slow;
+}`,
+    'Repeat and Missing Number': `vector<int> findErrorNums(vector<int>& nums) {
+    long long n = nums.size();
+    long long sum = 0, sqSum = 0;
+    long long expectedSum = (n * (n + 1)) / 2;
+    long long expectedSqSum = (n * (n + 1) * (2 * n + 1)) / 6;
+    for (int num : nums) {
+        sum += num;
+        sqSum += 1LL * num * num;
+    }
+    long long diff = sum - expectedSum; // x - y
+    long long sqDiff = sqSum - expectedSqSum; // x^2 - y^2
+    long long sumXY = sqDiff / diff; // x + y
+    long long x = (diff + sumXY) / 2;
+    long long y = sumXY - x;
+    return {(int)x, (int)y}; // [Repeating, Missing]
+}`,
+    'Two Sum': `vector<int> twoSum(vector<int>& nums, int target) {
+    unordered_map<int, int> m;
+    for (int i = 0; i < nums.size(); i++) {
+        int diff = target - nums[i];
+        if (m.find(diff) != m.end()) {
+            return {m[diff], i};
+        }
+        m[nums[i]] = i;
+    }
+    return {};
+}`,
+    'Longest Consecutive Sequence': `int longestConsecutive(vector<int>& nums) {
+    unordered_set<int> s(nums.begin(), nums.end());
+    int maxLen = 0;
+    for (int num : s) {
+        if (s.find(num - 1) == s.end()) {
+            int currentNum = num, currentLen = 1;
+            while (s.find(currentNum + 1) != s.end()) {
+                currentNum++;
+                currentLen++;
+            }
+            maxLen = max(maxLen, currentLen);
+        }
+    }
+    return maxLen;
+}`,
+    'Reverse a Linked List': `ListNode* reverseList(ListNode* head) {
+    ListNode* prev = nullptr;
+    ListNode* curr = head;
+    while (curr != nullptr) {
+        ListNode* nextNode = curr->next;
+        curr->next = prev;
+        prev = curr;
+        curr = nextNode;
+    }
+    return prev;
+}`,
+    'Find the Middle of a Linked List': `ListNode* middleNode(ListNode* head) {
+    ListNode* slow = head;
+    ListNode* fast = head;
+    while (fast != nullptr && fast->next != nullptr) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+    return slow;
+}`,
+    'Merge Two Sorted Linked Lists': `ListNode* mergeTwoLists(ListNode* l1, ListNode* l2) {
+    ListNode* dummy = new ListNode(-1);
+    ListNode* curr = dummy;
+    while (l1 != nullptr && l2 != nullptr) {
+        if (l1->val <= l2->val) {
+            curr->next = l1; l1 = l1->next;
+        } else {
+            curr->next = l2; l2 = l2->next;
+        }
+        curr = curr->next;
+    }
+    curr->next = l1 ? l1 : l2;
+    return dummy->next;
+}`,
+    'Remove Nth Node From End of List': `ListNode* removeNthFromEnd(ListNode* head, int n) {
+    ListNode* dummy = new ListNode(0);
+    dummy->next = head;
+    ListNode* slow = dummy;
+    ListNode* fast = dummy;
+    for (int i = 0; i <= n; i++) fast = fast->next;
+    while (fast != nullptr) {
+        slow = slow->next;
+        fast = fast->next;
+    }
+    slow->next = slow->next->next;
+    return dummy->next;
+}`,
+    'Add Two Numbers as Linked Lists': `ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+    ListNode* dummy = new ListNode(0);
+    ListNode* curr = dummy;
+    int carry = 0;
+    while (l1 != nullptr || l2 != nullptr || carry) {
+        int sum = (l1 ? l1->val : 0) + (l2 ? l2->val : 0) + carry;
+        carry = sum / 10;
+        curr->next = new ListNode(sum % 10);
+        curr = curr->next;
+        if (l1) l1 = l1->next;
+        if (l2) l2 = l2->next;
+    }
+    return dummy->next;
+}`,
+    'Delete Node in a Linked List': `void deleteNode(ListNode* node) {
+    node->val = node->next->val;
+    node->next = node->next->next;
+}`,
+    'Intersection of Two Linked Lists': `ListNode* getIntersectionNode(ListNode* headA, ListNode* headB) {
+    if (headA == nullptr || headB == nullptr) return nullptr;
+    ListNode* pA = headA;
+    ListNode* pB = headB;
+    while (pA != pB) {
+        pA = pA == nullptr ? headB : pA->next;
+        pB = pB == nullptr ? headA : pB->next;
+    }
+    return pA;
+}`,
+    'Detect Cycle in a Linked List': `bool hasCycle(ListNode* head) {
+    ListNode* slow = head;
+    ListNode* fast = head;
+    while (fast != nullptr && fast->next != nullptr) {
+        slow = slow->next;
+        fast = fast->next->next;
+        if (slow == fast) return true;
+    }
+    return false;
+}`,
+    'Find starting point of the Cycle': `ListNode* detectCycle(ListNode* head) {
+    ListNode* slow = head;
+    ListNode* fast = head;
+    while (fast != nullptr && fast->next != nullptr) {
+        slow = slow->next;
+        fast = fast->next->next;
+        if (slow == fast) {
+            slow = head;
+            while (slow != fast) {
+                slow = slow->next;
+                fast = fast->next;
+            }
+            return slow;
+        }
+    }
+    return nullptr;
+}`,
+    'Reverse Words in a String': `string reverseWords(string s) {
+    vector<string> words;
+    string temp = "";
+    for (char c : s) {
+        if (c == ' ') {
+            if (!temp.empty()) {
+                words.push_back(temp);
+                temp = "";
+            }
+        } else {
+            temp += c;
+        }
+    }
+    if (!temp.empty()) words.push_back(temp);
+    reverse(words.begin(), words.end());
+    string res = "";
+    for (size_t i = 0; i < words.size(); i++) {
+        res += words[i];
+        if (i < words.size() - 1) res += " ";
+    }
+    return res;
+}`,
+    'Longest Palindromic Substring': `string longestPalindrome(string s) {
+    if (s.empty()) return "";
+    int start = 0, maxLen = 0;
+    auto expand = [&](int l, int r) {
+        while (l >= 0 && r < s.size() && s[l] == s[r]) {
+            l--; r++;
+        }
+        int len = r - l - 1;
+        if (len > maxLen) {
+            maxLen = len;
+            start = l + 1;
+        }
+    };
+    for (size_t i = 0; i < s.size(); i++) {
+        expand(i, i);
+        expand(i, i + 1);
+    }
+    return s.substr(start, maxLen);
+}`,
+    'Roman to Integer': `int romanToInt(string s) {
+    unordered_map<char, int> m = {
+        {'I', 1}, {'V', 5}, {'X', 10}, {'L', 50}, 
+        {'C', 100}, {'D', 500}, {'M', 1000}
+    };
+    int total = 0;
+    for (size_t i = 0; i < s.size(); i++) {
+        if (i + 1 < s.size() && m[s[i]] < m[s[i+1]]) {
+            total -= m[s[i]];
+        } else {
+            total += m[s[i]];
+        }
+    }
+    return total;
+}`,
+    'Integer to Roman': `string intToRoman(int num) {
+    vector<int> values = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+    vector<string> symbols = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
+    string roman = "";
+    for (size_t i = 0; i < values.size(); i++) {
+        while (num >= values[i]) {
+            roman += symbols[i];
+            num -= values[i];
+        }
+    }
+    return roman;
+}`,
+    'Longest Common Prefix': `string longestCommonPrefix(vector<string>& strs) {
+    if (strs.empty()) return "";
+    string prefix = strs[0];
+    for (size_t i = 1; i < strs.size(); i++) {
+        while (strs[i].find(prefix) != 0) {
+            prefix = prefix.substr(0, prefix.size() - 1);
+            if (prefix.empty()) return "";
+        }
+    }
+    return prefix;
+}`,
+    'Check for Anagrams': `bool isAnagram(string s, string t) {
+    if (s.size() != t.size()) return false;
+    vector<int> count(26, 0);
+    for (size_t i = 0; i < s.size(); i++) {
+        count[s[i] - 'a']++;
+        count[t[i] - 'a']--;
+    }
+    for (int c : count) {
+        if (c != 0) return false;
+    }
+    return true;
+}`,
+  };
+
+  if (manualCppMap[title]) {
+    return manualCppMap[title];
+  }
+
+  // Generic dynamic conversion fallback
+  let converted = cpp;
+  
+  // Replace function signature
+  converted = converted.replace(/function\s+(\w+)\s*\((.*?)\)\s*\{/g, (match, funcName, params) => {
+    let returnType = 'auto';
+    if (funcName.startsWith('is') || funcName.startsWith('has') || funcName.startsWith('search')) {
+      returnType = 'bool';
+    } else if (funcName.includes('Count') || funcName.includes('Len') || funcName.includes('Platform')) {
+      returnType = 'int';
+    }
+    return `${returnType} ${funcName}(${params.split(',').map((p: string) => `auto ${p.trim()}`).join(', ')}) {`;
+  });
+
+  // Standard substitutions
+  converted = converted.replace(/\blet\b/g, 'auto');
+  converted = converted.replace(/\bconst\b/g, 'const auto');
+  converted = converted.replace(/===/g, '==');
+  converted = converted.replace(/!==/g, '!=');
+  converted = converted.replace(/\bnull\b/g, 'nullptr');
+  converted = converted.replace(/\bInfinity\b/g, 'INT_MAX');
+  converted = converted.replace(/Math\.max/g, 'max');
+  converted = converted.replace(/Math\.min/g, 'min');
+  converted = converted.replace(/Math\.floor/g, ''); 
+  converted = converted.replace(/\.length/g, '.size()');
+  converted = converted.replace(/(\w+)\.next/g, '$1->next');
+  converted = converted.replace(/(\w+)\.val/g, '$1->val');
+  converted = converted.replace(/new Map\(\)/g, 'unordered_map<int, int>()');
+  converted = converted.replace(/new Set\((.*?)\)/g, 'unordered_set<int>($1)');
+
+  return converted;
+};
+
+// Dynamically constructs the ultimate scientific, highly breathable Concept/Code segmented slides.
 const compileSlidesForQuestion = (q: SeedQuestion): any[] => {
   if (q.slides && q.slides.length > 0) {
     return q.slides;
   }
 
   const slides: any[] = [];
+  const cppCode = translateJsToCpp(q.code, q.title);
 
   if (q.difficulty === 'Easy') {
-    // 3 Slides for Easy Questions
+    // 4 Slides for Easy Questions
     slides.push({
       type: 'intro',
-      headline: `${q.title}: The Quest Unlocked`,
-      body: `${q.explanation}\n\n💡 **Visual Analogy**: ${q.analogy || 'Imagine arranging items systematically to observe underlying structural patterns.'}\n\n🧠 **The Intuition**: ${q.intuition || 'Identify subproblems and carry the running maximum.'}`
-    });
-
-    slides.push({
-      type: 'code',
-      headline: 'Optimal Implementation',
-      body: `Inspect the clean, optimized solution below. Notice the pointer updates and boundary checks:`,
-      code: q.code
-    });
-
-    slides.push({
-      type: 'summary',
-      headline: 'SDE Master Key',
-      body: `Time/Space Complexity: ${q.complexity}\n\n⚠️ **Common Pitfall**: ${q.mistake || 'Failing to handle edge bounds.'}\n\n✨ **Takeaway**: Successfully mastered this core ${q.topic} pattern!`
-    });
-  } else if (q.difficulty === 'Medium') {
-    // 5 Slides for Medium Questions
-    slides.push({
-      type: 'intro',
-      headline: `${q.title}: The Quest Unlocked`,
-      body: `${q.explanation}\n\n💡 **Visual Analogy**: ${q.analogy || 'Imagine arranging items systematically to observe underlying structural patterns.'}`
+      headline: `${q.title}: Snapshot`,
+      body: `**Problem Statement**:\n${q.explanation}\n\n💡 **Visual Analogy**:\n${q.analogy || 'Imagine organizing items systematically to observe underlying structural patterns.'}\n\n👉 *But wait... how do we solve this efficiently without checking every combination twice? Let's check the core intuition...*`
     });
 
     slides.push({
       type: 'intuition',
-      headline: 'Algorithmic Breakthrough',
-      body: `🧠 **The Core Insight**:\n${q.intuition || 'Optimize by avoiding redundant calculations.'}`
-    });
-
-    slides.push({
-      type: 'dryrun',
-      headline: 'Visual Dry Run',
-      body: `Let's trace the algorithm step-by-step:\n\n${q.dryRun || 'State parameters update.'}`
+      headline: 'Concept: Pattern Recognition',
+      body: `🧠 **Core Intuition**:\n${q.intuition || 'Identify subproblems and carry the running maximum.'}\n\n🔍 **When does this click in interviews?**\n- Contiguous subarray → *Sliding window/Prefix sum*\n- Repeated lookup → *Hashmap*\n\n👉 *Let's inspect the optimal C++ implementation to see this in action...*`
     });
 
     slides.push({
       type: 'code',
-      headline: 'Optimal Implementation',
-      body: `Inspect the clean, optimized solution below. Notice the pointer updates:`,
-      code: q.code
+      headline: 'Code: Optimal C++ Implementation',
+      body: `Study this clean, highly optimized implementation. Notice the edge cases:`,
+      code: cppCode
     });
 
     slides.push({
       type: 'summary',
-      headline: 'Complexity & SDE Checklist',
-      body: `Time/Space Complexity: ${q.complexity}\n\n⚠️ **Pitfall**: ${q.mistake || 'Verify boundaries.'}\n\n✨ **Master Takeaway**: Successfully mastered this concept!`
+      headline: 'Mistakes & Spaced Repetition',
+      body: `⚠️ **Common Traps & Anti-patterns**:\n- ${q.mistake || 'Failing to handle edge bounds.'}\n- *Off-by-one errors on index loops.*\n\n🧠 **Interviewer Mindset & Follow-ups**:\n- *Can you optimize this in-place without auxiliary space?*\n- *What if the input array is already sorted?*\n\n⏱️ **High-Speed Recall Compression**:\n- **5s Recall**: \`${q.topic} frequency lookup\`\n- **20s Recall**: \`${q.prefer || 'Check complement in map before adding.'}\`\n- **1m Recall**: \`${q.explanation} solved in ${q.complexity} time using optimal spacing.\``
     });
+
+  } else if (q.difficulty === 'Medium') {
+    // 6 Slides for Medium Questions
+    slides.push({
+      type: 'intro',
+      headline: `${q.title}: Snapshot`,
+      body: `**Problem Statement**:\n${q.explanation}\n\n💡 **Visual Analogy**:\n${q.analogy || 'Imagine arranging items systematically.'}\n\n👉 *What is the critical observation that reduces the complexity from O(N²) to optimal O(N)?*`
+    });
+
+    slides.push({
+      type: 'intuition',
+      headline: 'Concept: Trigger Words & False Traps',
+      body: `🧠 **Trigger Words**:\n- *Contiguous, lookup, dynamic subarray updates.*\n\n🔍 **Hidden Clues**:\n- *Keep track of the running maximum, or reuse indices to avoid recalculations.*\n\n🚫 **False Traps**:\n- *Trying to sort the array first, which fails if ordering of original indices must be preserved.*\n\n👉 *Let's dry run this algorithm to visualize the pointer shifts...*`
+    });
+
+    slides.push({
+      type: 'dryrun',
+      headline: 'Concept: Visual State Tracing',
+      body: `Let's trace the algorithm step-by-step:\n\n${q.dryRun || 'State parameters update.'}\n\n✨ **One Realization Per Step**: Pointers and variables update dynamically to bypass redundant recalculations!\n\n👉 *How does this translate into clean, breathless C++ code?*`
+    });
+
+    slides.push({
+      type: 'complexity',
+      headline: 'Concept: Optimal Logic Breakdown',
+      body: `🧠 **Core Insights**:\n${q.intuition || 'Optimize by avoiding redundant calculations.'}\n\n⏱️ **What changed from Brute Force?**:\nInstead of re-evaluating every subsegment, we carry forward our previous state calculations in constant time, achieving massive performance gains.\n\n👉 *Let's examine the raw C++ code to lock this in...*`
+    });
+
+    slides.push({
+      type: 'code',
+      headline: 'Code: Breathable C++ Solution',
+      body: `Study the clean variable names, layout spacing, and edge cases:`,
+      code: cppCode
+    });
+
+    slides.push({
+      type: 'summary',
+      headline: 'Mistakes & 5s/20s/1m Recall',
+      body: `⚠️ **Pitfalls to Avoid**:\n- ${q.mistake || 'Verify boundaries.'}\n- *Failing to reset counter variables inside nesting structures.*\n\n🧠 **Interviewer Mindset & Follow-ups**:\n- *Are they testing pattern recognition or clean pointer manipulation?*\n- *Can this be computed with one pointer less?*\n\n⏱️ **Compression Revision**:\n- **5s Recall**: \`Subarray scanning / Sliding window\`\n- **20s Recall**: \`${q.prefer || 'Maintain running sum'}\`\n- **1m Recall**: \`${q.explanation} using two pointers, optimizing time to ${q.complexity}.\``
+    });
+
   } else {
-    // 7 Slides for Hard Questions (Maximum Depth)
+    // 8 Slides for Hard Questions (Maximum Depth)
     slides.push({
       type: 'intro',
       headline: `${q.title}: The Boss Fight`,
-      body: `🔥 **Challenge**: ${q.explanation}\n\n💡 **Analogy**: ${q.analogy || 'Imagine arranging items systematically.'}`
+      body: `🔥 **Challenge**:\n${q.explanation}\n\n💡 **Visual Analogy**:\n${q.analogy || 'Imagine folding or nesting items systematically.'}\n\n👉 *A naive search takes exponential or O(N²) time. How do we achieve O(N) using optimal prefix states?*`
     });
 
     slides.push({
       type: 'intuition',
-      headline: 'Conceptual Breakthrough',
-      body: `🧠 **The Critical Insight**:\n${q.intuition || 'Optimize by avoiding redundant calculations.'}`
+      headline: 'Concept: Spotted under Pressure',
+      body: `🧠 **Trigger Words**:\n- *Maximum, optimal bounds, multi-pointer traversal, nested states.*\n\n🔍 **Hidden Clues**:\n- *The problem can be broken down into identical overlapping subproblems.*\n\n🚫 **False Traps**:\n- *Double loops or excessive recursion without memoization, causing stack overflows.*\n\n👉 *Let's trace this step-by-step through a cinematic simulation...*`
     });
 
     slides.push({
       type: 'dryrun',
-      headline: 'Cinematic Simulation',
-      body: `Let's dry run this algorithm step-by-step:\n\n${q.dryRun || 'Trace parameters during execution.'}`
+      headline: 'Concept: Cinematic Simulation',
+      body: `Let's dry run this algorithm step-by-step:\n\n${q.dryRun || 'Trace parameters during execution.'}\n\n✨ **Visualizing State Changes**: Pointers shift level-by-level, carrying forward optimal results to preserve linear time!\n\n👉 *Why does this conceptual blueprint hold up mathematically?*`
+    });
+
+    slides.push({
+      type: 'complexity',
+      headline: 'Concept: Conceptual Blueprint',
+      body: `🧠 **Core Solution Logic**:\n${q.intuition || 'Optimize by avoiding redundant calculations.'}\n\n⏱️ **Resource Footprints**:\n- **Time Bound**: \`${q.complexity}\`\n- **Space Bound**: \`O(1) auxiliary space (in-place calculations)\`\n\n👉 *Now, let's look at the clean, beautiful C++ implementation...*`
     });
 
     slides.push({
       type: 'code',
-      headline: 'Optimal Implementation',
-      body: `Study this highly optimized, zero-allocation code snippet:`,
-      code: q.code
+      headline: 'Code: Production C++',
+      body: `Note the clean variable naming, class templates, and edge cases:`,
+      code: cppCode
     });
 
     slides.push({
       type: 'complexity',
-      headline: 'Pitfall Red Alert',
-      body: `⚠️ **Common Traps & Anti-patterns**:\n\n${q.mistake || 'Index out of bounds.'}\n\n👉 **How to avoid**: ${q.prefer || 'Perform explicit boundaries checks.'}`
-    });
-
-    slides.push({
-      type: 'complexity',
-      headline: 'Resource Bounds',
-      body: `Analyze the time vs space growth limits. Make sure to specify these:`,
-      blocks: [
-        { type: 'complexity', content: q.complexity, meta: { space: 'O(1) auxiliary' } }
-      ]
+      headline: 'Code: Mistakes & Red Alert Traps',
+      body: `⚠️ **Red Alert Pitfalls**:\n- ${q.mistake || 'Index out of bounds.'}\n- *Failing to verify bounds before dereferencing pointers, causing Segfaults.*\n\n👉 **How to avoid**: \`${q.prefer || 'Perform explicit boundary checks.'}\`\n\n👉 *What follow-ups will the interviewer fire at you next?*`
     });
 
     slides.push({
       type: 'summary',
-      headline: 'SDE Master Key',
-      body: `1. Key Pattern: ${q.topic}\n2. Solved under strict resource limits!\n\nReady to showcase this top-tier solution to interviewers!`
+      headline: 'Interviewer Mindset Box',
+      body: `🧠 **What the Interviewer is Testing**:\n1. **Pattern recognition** under extreme time constraints.\n2. **Performance optimization** under strict memory requirements.\n3. **Scalability** and architectural tradeoffs.\n4. **Clean communication** of complex nested structures.\n\n👉 *Let's perform a high-speed recall compression to store this in long-term memory...*`
+    });
+
+    slides.push({
+      type: 'summary',
+      headline: 'Spaced Repetition & Recall',
+      body: `⏱️ **High-Speed Recall Compression**:\n- **5s Recall**: \`Optimal ${q.topic} transitions\`\n- **20s Recall**: \`${q.prefer || 'Check boundaries'}\`\n- **1m Recall**: \`${q.explanation} solved in ${q.complexity} time.\`\n\n🔗 **Similar Problems**:\n- *Linked List Cycle II / Floyd's Cycle detection*\n- *Prefix Sum Hash Map*\n\n👉 *Next step: Click "Got it" or "Need revision" to track your confidence.*`
     });
   }
 
@@ -2729,7 +3166,31 @@ const runDSAKnowledgeSeeder = async () => {
     await Folder.deleteMany({ createdBy: adminId });
     logger.info(`✅ Cleared ${existingFolderIds.length} existing folders and associated card collections.`);
 
-    // c. Seed Parent Sheet Folders
+    // c. Seed Parent Sheet Folders in nested DSA -> Sheets structure
+    const dsaFolder = await Folder.create({
+      title: 'DSA',
+      description: 'Master Data Structures and Algorithms conceptually.',
+      icon: 'code',
+      color: '#7C3AED',
+      createdBy: adminId,
+      visibility: 'public',
+      roleAccess: ['user', 'admin', 'superadmin'],
+      order: 0,
+      parentFolderId: null,
+    });
+
+    const sheetsFolder = await Folder.create({
+      title: 'Sheets',
+      description: 'Top curated sheets for placement and interview preparation.',
+      icon: 'layers',
+      color: '#8B5CF6',
+      createdBy: adminId,
+      visibility: 'public',
+      roleAccess: ['user', 'admin', 'superadmin'],
+      order: 0,
+      parentFolderId: dsaFolder._id,
+    });
+
     const sheetTitleToIdMap: Record<string, string> = {};
     for (let i = 0; i < SHEET_CONFIGS.length; i++) {
       const config = SHEET_CONFIGS[i];
@@ -2742,19 +3203,92 @@ const runDSAKnowledgeSeeder = async () => {
         visibility: 'public',
         roleAccess: ['user', 'admin', 'superadmin'],
         order: i,
-        parentFolderId: null,
+        parentFolderId: sheetsFolder._id,
       });
       sheetTitleToIdMap[config.title] = folder._id.toString();
     }
-    logger.info(`✅ Seeded ${SHEET_CONFIGS.length} Parent Sheet Folders.`);
+    logger.info(`✅ Seeded ${SHEET_CONFIGS.length} Parent Sheet Folders under DSA -> Sheets.`);
+
+    // Seed other standard root folders (Operating Systems, DBMS, etc.)
+    const OTHER_ROOT_FOLDERS = [
+      {
+        title: 'Operating Systems',
+        description: 'Master core OS concepts: processes, threads, memory management, and file systems.',
+        icon: 'cpu',
+        color: '#3B82F6',
+        order: 1,
+      },
+      {
+        title: 'Computer Networks',
+        description: 'Explore TCP/IP, OSI layers, protocols, routing, and network security basics.',
+        icon: 'globe',
+        color: '#06B6D4',
+        order: 2,
+      },
+      {
+        title: 'DBMS',
+        description: 'Learn relational database systems, SQL, normalization, indexing, and transactions.',
+        icon: 'database',
+        color: '#10B981',
+        order: 3,
+      },
+      {
+        title: 'System Design',
+        description: 'Understand high-level system architecture, scalability, microservices, and system design patterns.',
+        icon: 'git-branch',
+        color: '#EC4899',
+        order: 4,
+      },
+      {
+        title: 'Brain Stellar',
+        description: 'Handpicked conceptual brain teasers, logical puzzles, and quantitative challenges.',
+        icon: 'brain',
+        color: '#8B5CF6',
+        order: 5,
+      },
+      {
+        title: 'Guesstimates',
+        description: 'Develop structured estimating frameworks for sizing markets and resource usage.',
+        icon: 'calculator',
+        color: '#F59E0B',
+        order: 6,
+      },
+      {
+        title: 'Case Studies',
+        description: 'Real-world business and product case studies analyzing growth, architecture, and engineering strategies.',
+        icon: 'book-open',
+        color: '#EF4444',
+        order: 7,
+      }
+    ];
+
+    for (const f of OTHER_ROOT_FOLDERS) {
+      await Folder.create({
+        title: f.title,
+        description: f.description,
+        icon: f.icon,
+        color: f.color,
+        createdBy: adminId,
+        visibility: 'public',
+        roleAccess: ['user', 'admin', 'superadmin'],
+        order: f.order,
+        parentFolderId: null,
+      });
+    }
+    logger.info(`✅ Seeded ${OTHER_ROOT_FOLDERS.length} other Root Folders.`);
 
     // d. Expand and seed complete Striver SDE Sheet questions
     // Inject all templates into the seeder question library
     const masterQuestionsList: SeedQuestion[] = [...STRIVER_SDE_QUESTIONS];
 
     // Programmatically populate all remaining Striver SDE topics to fulfill 180 questions
-    for (const [topic, questions] of Object.entries(STRIVER_SHEET_CATALOG)) {
+    for (const [topicKey, questions] of Object.entries(STRIVER_SHEET_CATALOG)) {
       for (const q of questions) {
+        let topic = topicKey;
+        // Fix topic routing bug for Linked List questions placed in Arrays key
+        if (q.title === 'Rotate a Linked List' || q.title === 'Clone a Linked List with Random Pointer') {
+          topic = 'Linked Lists';
+        }
         masterQuestionsList.push({
           title: q.title,
           topic: topic,
@@ -2774,9 +3308,18 @@ const runDSAKnowledgeSeeder = async () => {
       }
     }
 
+    // Merge in the newly completed remaining topics
+    masterQuestionsList.push(...STRIVER_STRINGS_QUESTIONS);
+    masterQuestionsList.push(...STRIVER_TRIES_QUESTIONS);
+    masterQuestionsList.push(...STRIVER_BINARY_TREES_QUESTIONS);
+    masterQuestionsList.push(...STRIVER_BST_QUESTIONS);
+    masterQuestionsList.push(...STRIVER_GRAPHS_QUESTIONS);
+    masterQuestionsList.push(...STRIVER_DP_QUESTIONS);
+
     // e. Populate Subfolders and Cards
     let totalCardsSeeded = 0;
     let totalSubfoldersSeeded = 0;
+    const cardMapByName = new Map<string, mongoose.Types.ObjectId>();
 
     for (const sheetTitle of Object.keys(sheetTitleToIdMap)) {
       const parentId = sheetTitleToIdMap[sheetTitle];
@@ -2838,38 +3381,57 @@ const runDSAKnowledgeSeeder = async () => {
 
         // Seed individual Revision Cards inside this subfolder
         let cardOrder = 0;
+        const subfolderCardIds: mongoose.Types.ObjectId[] = [];
         for (const q of questionsInSub) {
-          // Construct slides dynamically using our Cinematic Slide Compiler
-          const compiledSlides = compileSlidesForQuestion(q);
-          const richSlides = compiledSlides.map((slide, idx) => ({
-            type: slide.type,
-            headline: slide.headline,
-            body: slide.body,
-            code: slide.code,
-            blocks: slide.blocks || [],
-            slideIndex: idx,
-            totalSlides: compiledSlides.length,
-          }));
+          const normalizedTitle = q.title.trim().toLowerCase();
+          let cardId: mongoose.Types.ObjectId;
 
-          // Create Revision Card
-          await RevisionCard.create({
-            title: q.title,
-            topic: q.topic,
-            explanation: q.explanation,
-            code: q.code,
-            difficulty: q.difficulty,
-            complexity: q.complexity,
-            tags: q.tags,
-            examples: q.examples,
-            folderId: subfolder._id,
-            createdBy: adminId,
-            visibility: 'public',
-            order: cardOrder++,
-            slides: richSlides,
-          });
-          totalCardsSeeded++;
+          if (cardMapByName.has(normalizedTitle)) {
+            cardId = cardMapByName.get(normalizedTitle)!;
+          } else {
+            // Pre-translate to C++ so both card.code and slides.code are pristine C++
+            const cppCode = translateJsToCpp(q.code, q.title);
+            q.code = cppCode;
+
+            // Construct slides dynamically using our Cinematic Slide Compiler
+            const compiledSlides = compileSlidesForQuestion(q);
+            const richSlides = compiledSlides.map((slide, idx) => ({
+              type: slide.type,
+              headline: slide.headline,
+              body: slide.body,
+              code: slide.code,
+              blocks: slide.blocks || [],
+              slideIndex: idx,
+              totalSlides: compiledSlides.length,
+            }));
+
+            // Create Revision Card
+            const newCard = await RevisionCard.create({
+              title: q.title,
+              topic: q.topic,
+              explanation: q.explanation,
+              code: q.code,
+              difficulty: q.difficulty,
+              complexity: q.complexity,
+              tags: q.tags,
+              examples: q.examples,
+              folderId: subfolder._id,
+              createdBy: adminId,
+              visibility: 'public',
+              order: cardOrder++,
+              slides: richSlides,
+            });
+            cardId = newCard._id as mongoose.Types.ObjectId;
+            cardMapByName.set(normalizedTitle, cardId);
+            totalCardsSeeded++;
+          }
+          subfolderCardIds.push(cardId);
         }
-        
+
+        // Update subfolder's cardIds array
+        subfolder.cardIds = subfolderCardIds;
+        await subfolder.save();
+
         logger.info(`   ✅ Created Subfolder "${subTitle}" with ${questionsInSub.length} question cards.`);
       }
     }
