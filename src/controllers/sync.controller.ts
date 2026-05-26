@@ -60,18 +60,23 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
   const userId = req.user!._id.toString();
   const role = req.user!.role || 'user';
 
+  const processedIds: string[] = [];
+  const failedIds: string[] = [];
+  const permanentFailures: string[] = [];
+
   // Process actions sequentially (Last-Write-Wins based on offline timestamps)
   // We wrap them in try-catch to ensure one bad action doesn't crash the entire batch sync!
   for (const item of actions) {
     const { id: mutationId, action, payload } = item;
 
+    if (!mutationId) continue;
+
     // Idempotency check: Skip already-processed enqueued action IDs (UUID v4)
-    if (mutationId) {
-      const alreadyProcessed = await ProcessedMutation.findOne({ mutationId });
-      if (alreadyProcessed) {
-        console.log(`[Batch Sync Idempotency] Skipping already processed action ID: ${mutationId}`);
-        continue;
-      }
+    const alreadyProcessed = await ProcessedMutation.findOne({ mutationId });
+    if (alreadyProcessed) {
+      console.log(`[Batch Sync Idempotency] Skipping already processed action ID: ${mutationId}`);
+      processedIds.push(mutationId);
+      continue;
     }
 
     try {
@@ -192,13 +197,21 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
       }
 
       // Mark this mutation as successfully processed
-      if (mutationId) {
-        await ProcessedMutation.create({ mutationId, userId }).catch(() => {});
-      }
+      await ProcessedMutation.create({ mutationId, userId }).catch(() => {});
+      processedIds.push(mutationId);
     } catch (err: any) {
       console.error(`[Batch Sync Action Error] Failed processing: ${action} | Error:`, err.message);
+      failedIds.push(mutationId);
+      // If error is schema validation or type mismatch, classify as permanent failure (poison)
+      if (err.name === 'ValidationError' || err.name === 'CastError' || err.message?.includes('Validation failed') || err.message?.includes('not found')) {
+        permanentFailures.push(mutationId);
+      }
     }
   }
 
-  return successResponse(res, 200, 'Batch actions processed successfully');
+  return successResponse(res, 200, 'Batch actions processed successfully', {
+    processedIds,
+    failedIds,
+    permanentFailures
+  });
 });
