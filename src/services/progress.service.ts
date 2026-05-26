@@ -147,6 +147,12 @@ export const updateProgressService = async (userId: string, data: ProgressUpdate
 export const getDashboardStatsService = async (userId: string) => {
   const objectId = new mongoose.Types.ObjectId(userId);
 
+  // Ensure totalSwipes and totalScrolls exist on the user document (for existing documents)
+  await User.updateOne(
+    { _id: userId, $or: [{ totalSwipes: { $exists: false } }, { totalScrolls: { $exists: false } }] },
+    { $set: { totalSwipes: 0, totalScrolls: 0 } }
+  );
+
   const [user, overallAgg, recentProgress, weakTopicsAgg, consistencyAgg] = await Promise.all([
     User.findById(userId).select('streakCount lastCompletedDate name totalSwipes totalScrolls').lean(),
     Progress.aggregate([
