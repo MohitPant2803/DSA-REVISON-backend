@@ -3017,123 +3017,101 @@ const compileSlidesForQuestion = (q: SeedQuestion): any[] => {
   const slides: any[] = [];
   const cppCode = translateJsToCpp(q.code, q.title);
 
-  if (q.difficulty === 'Easy') {
-    // 4 Slides for Easy Questions
-    slides.push({
-      type: 'intro',
-      headline: `${q.title}: Snapshot`,
-      body: `**Problem Statement**:\n${q.explanation}\n\n💡 **Visual Analogy**:\n${q.analogy || 'Imagine organizing items systematically to observe underlying structural patterns.'}\n\n👉 *But wait... how do we solve this efficiently without checking every combination twice? Let's check the core intuition...*`
-    });
+  // CARD 1 — Problem Snapshot
+  slides.push({
+    type: 'intro',
+    headline: `${q.title}: Snapshot`,
+    body: `**Problem Statement**:\n${q.explanation}\n\n💡 **Simplified Analogy**:\n${q.analogy || 'Imagine arranging items systematically to observe running elements.'}\n\n👉 *But wait... brute force recalculates everything. Let's see how to spot the pattern instantly...*`
+  });
 
-    slides.push({
-      type: 'intuition',
-      headline: 'Concept: Pattern Recognition',
-      body: `🧠 **Core Intuition**:\n${q.intuition || 'Identify subproblems and carry the running maximum.'}\n\n🔍 **When does this click in interviews?**\n- Contiguous subarray → *Sliding window/Prefix sum*\n- Repeated lookup → *Hashmap*\n\n👉 *Let's inspect the optimal C++ implementation to see this in action...*`
-    });
+  // CARD 2 — Pattern Recognition
+  slides.push({
+    type: 'explanation',
+    headline: 'Pattern: Spotting the Clues',
+    body: `🔍 **When should this click in interviews?**
+- Contiguous subarray/subsegments → *Think sliding window / Prefix sum*
+- Repeated values or frequency lookups → *Think hashmap*
+- Minimum operations / optimal decisions → *Think greedy / DP*
 
-    slides.push({
-      type: 'code',
-      headline: 'Code: Optimal C++ Implementation',
-      body: `Study this clean, highly optimized implementation. Notice the edge cases:`,
-      code: cppCode
-    });
+🎯 **Trigger Words**: \`contiguous\`, \`distinct elements\`, \`longest subset\`, \`running bounds\`.
 
-    slides.push({
-      type: 'summary',
-      headline: 'Mistakes & Spaced Repetition',
-      body: `⚠️ **Common Traps & Anti-patterns**:\n- ${q.mistake || 'Failing to handle edge bounds.'}\n- *Off-by-one errors on index loops.*\n\n🧠 **Interviewer Mindset & Follow-ups**:\n- *Can you optimize this in-place without auxiliary space?*\n- *What if the input array is already sorted?*\n\n⏱️ **High-Speed Recall Compression**:\n- **5s Recall**: \`${q.topic} frequency lookup\`\n- **20s Recall**: \`${q.prefer || 'Check complement in map before adding.'}\`\n- **1m Recall**: \`${q.explanation} solved in ${q.complexity} time using optimal spacing.\``
-    });
+🚫 **False Traps**: Trying to sort the array first, which destroys the original index positioning required for subarray results.`
+  });
 
-  } else if (q.difficulty === 'Medium') {
-    // 6 Slides for Medium Questions
-    slides.push({
-      type: 'intro',
-      headline: `${q.title}: Snapshot`,
-      body: `**Problem Statement**:\n${q.explanation}\n\n💡 **Visual Analogy**:\n${q.analogy || 'Imagine arranging items systematically.'}\n\n👉 *What is the critical observation that reduces the complexity from O(N²) to optimal O(N)?*`
-    });
+  // CARD 3 — Intuition Card
+  slides.push({
+    type: 'explanation',
+    headline: 'Intuition: The Hook',
+    body: `🧠 **Core Intuition** (NO Code yet):
+${q.intuition || 'Instead of recalculating every window, what if we carry forward useful information? We only care about the best previous state.'}
 
-    slides.push({
-      type: 'intuition',
-      headline: 'Concept: Trigger Words & False Traps',
-      body: `🧠 **Trigger Words**:\n- *Contiguous, lookup, dynamic subarray updates.*\n\n🔍 **Hidden Clues**:\n- *Keep track of the running maximum, or reuse indices to avoid recalculations.*\n\n🚫 **False Traps**:\n- *Trying to sort the array first, which fails if ordering of original indices must be preserved.*\n\n👉 *Let's dry run this algorithm to visualize the pointer shifts...*`
-    });
+💡 *Notice how shifting our perspective makes the exponential search collapse into a linear scanning pass!*
 
-    slides.push({
-      type: 'dryrun',
-      headline: 'Concept: Visual State Tracing',
-      body: `Let's trace the algorithm step-by-step:\n\n${q.dryRun || 'State parameters update.'}\n\n✨ **One Realization Per Step**: Pointers and variables update dynamically to bypass redundant recalculations!\n\n👉 *How does this translate into clean, breathless C++ code?*`
-    });
+👉 *Let's trace this step-by-step through a visual execution simulation...*`
+  });
 
-    slides.push({
-      type: 'complexity',
-      headline: 'Concept: Optimal Logic Breakdown',
-      body: `🧠 **Core Insights**:\n${q.intuition || 'Optimize by avoiding redundant calculations.'}\n\n⏱️ **What changed from Brute Force?**:\nInstead of re-evaluating every subsegment, we carry forward our previous state calculations in constant time, achieving massive performance gains.\n\n👉 *Let's examine the raw C++ code to lock this in...*`
-    });
+  // CARD 4 — Visual Walkthrough
+  slides.push({
+    type: 'dryrun',
+    headline: 'Visual: State Walkthrough',
+    body: `Let's dry run this algorithm step-by-step:
 
-    slides.push({
-      type: 'code',
-      headline: 'Code: Breathable C++ Solution',
-      body: `Study the clean variable names, layout spacing, and edge cases:`,
-      code: cppCode
-    });
+${q.dryRun || 'Variables and pointers shift dynamically.'}
 
-    slides.push({
-      type: 'summary',
-      headline: 'Mistakes & 5s/20s/1m Recall',
-      body: `⚠️ **Pitfalls to Avoid**:\n- ${q.mistake || 'Verify boundaries.'}\n- *Failing to reset counter variables inside nesting structures.*\n\n🧠 **Interviewer Mindset & Follow-ups**:\n- *Are they testing pattern recognition or clean pointer manipulation?*\n- *Can this be computed with one pointer less?*\n\n⏱️ **Compression Revision**:\n- **5s Recall**: \`Subarray scanning / Sliding window\`\n- **20s Recall**: \`${q.prefer || 'Maintain running sum'}\`\n- **1m Recall**: \`${q.explanation} using two pointers, optimizing time to ${q.complexity}.\``
-    });
+✨ **One Realization Per Screen**: Pointers and running values update step-by-step to bypass redundant evaluations!
 
-  } else {
-    // 8 Slides for Hard Questions (Maximum Depth)
-    slides.push({
-      type: 'intro',
-      headline: `${q.title}: The Boss Fight`,
-      body: `🔥 **Challenge**:\n${q.explanation}\n\n💡 **Visual Analogy**:\n${q.analogy || 'Imagine folding or nesting items systematically.'}\n\n👉 *A naive search takes exponential or O(N²) time. How do we achieve O(N) using optimal prefix states?*`
-    });
+👉 *Why does this conceptual blueprint hold up mathematically?*`
+  });
 
-    slides.push({
-      type: 'intuition',
-      headline: 'Concept: Spotted under Pressure',
-      body: `🧠 **Trigger Words**:\n- *Maximum, optimal bounds, multi-pointer traversal, nested states.*\n\n🔍 **Hidden Clues**:\n- *The problem can be broken down into identical overlapping subproblems.*\n\n🚫 **False Traps**:\n- *Double loops or excessive recursion without memoization, causing stack overflows.*\n\n👉 *Let's trace this step-by-step through a cinematic simulation...*`
-    });
+  // CARD 5 — Optimal Solution Breakdown
+  slides.push({
+    type: 'complexity',
+    headline: 'Logic: Solution Breakdown',
+    body: `⏱️ **What changed from Brute Force?**
+Instead of re-evaluating every subarray from scratch, we carry forward running sums or sliding bounds in constant time, achieving massive scale performance.
 
-    slides.push({
-      type: 'dryrun',
-      headline: 'Concept: Cinematic Simulation',
-      body: `Let's dry run this algorithm step-by-step:\n\n${q.dryRun || 'Trace parameters during execution.'}\n\n✨ **Visualizing State Changes**: Pointers shift level-by-level, carrying forward optimal results to preserve linear time!\n\n👉 *Why does this conceptual blueprint hold up mathematically?*`
-    });
+📊 **Footprints**:
+- **Time Complexity**: \`${q.complexity || 'O(N)'}\`
+- **Space Complexity**: \`O(1) in-place auxiliary space\`
 
-    slides.push({
-      type: 'complexity',
-      headline: 'Concept: Conceptual Blueprint',
-      body: `🧠 **Core Solution Logic**:\n${q.intuition || 'Optimize by avoiding redundant calculations.'}\n\n⏱️ **Resource Footprints**:\n- **Time Bound**: \`${q.complexity}\`\n- **Space Bound**: \`O(1) auxiliary space (in-place calculations)\`\n\n👉 *Now, let's look at the clean, beautiful C++ implementation...*`
-    });
+👉 *Now, let's examine the raw C++ code to lock this in...*`
+  });
 
-    slides.push({
-      type: 'code',
-      headline: 'Code: Production C++',
-      body: `Note the clean variable naming, class templates, and edge cases:`,
-      code: cppCode
-    });
+  // CARD 6 — Code Mode Transition
+  slides.push({
+    type: 'code',
+    headline: 'Code: Breathable C++',
+    body: `Study the clean variable names, layout spacing, and edge cases:`,
+    code: cppCode
+  });
 
-    slides.push({
-      type: 'complexity',
-      headline: 'Code: Mistakes & Red Alert Traps',
-      body: `⚠️ **Red Alert Pitfalls**:\n- ${q.mistake || 'Index out of bounds.'}\n- *Failing to verify bounds before dereferencing pointers, causing Segfaults.*\n\n👉 **How to avoid**: \`${q.prefer || 'Perform explicit boundary checks.'}\`\n\n👉 *What follow-ups will the interviewer fire at you next?*`
-    });
+  // CARD 7 — Mistakes & Interview Traps
+  slides.push({
+    type: 'explanation',
+    headline: 'Traps: Mistakes & Pitfalls',
+    body: `⚠️ **Common Traps & Bugs**:
+- ${q.mistake || 'Index out of bounds on empty or single-element inputs.'}
+- *Off-by-one errors on boundary conditions.*
 
-    slides.push({
-      type: 'summary',
-      headline: 'Interviewer Mindset Box',
-      body: `🧠 **What the Interviewer is Testing**:\n1. **Pattern recognition** under extreme time constraints.\n2. **Performance optimization** under strict memory requirements.\n3. **Scalability** and architectural tradeoffs.\n4. **Clean communication** of complex nested structures.\n\n👉 *Let's perform a high-speed recall compression to store this in long-term memory...*`
-    });
+🧠 **Interviewer Mindset & Follow-ups**:
+- *Can this be optimized further in-place?*
+- *What if the array is already sorted?*
+- *Can you solve this with one pointer less?*`
+  });
 
-    slides.push({
-      type: 'summary',
-      headline: 'Spaced Repetition & Recall',
-      body: `⏱️ **High-Speed Recall Compression**:\n- **5s Recall**: \`Optimal ${q.topic} transitions\`\n- **20s Recall**: \`${q.prefer || 'Check boundaries'}\`\n- **1m Recall**: \`${q.explanation} solved in ${q.complexity} time.\`\n\n🔗 **Similar Problems**:\n- *Linked List Cycle II / Floyd's Cycle detection*\n- *Prefix Sum Hash Map*\n\n👉 *Next step: Click "Got it" or "Need revision" to track your confidence.*`
-    });
-  }
+  // CARD 8 — Compression Revision Card
+  slides.push({
+    type: 'summary',
+    headline: 'Recall: Spaced Repetition',
+    body: `⏱️ **High-Speed Recall Compression**:
+- **5s Recall**: \`${q.topic} frequency lookup\`
+- **20s Recall**: \`${q.prefer || 'Check complement in map before adding.'}\`
+- **1m Recall**: \`${q.explanation} solved in ${q.complexity} time using optimal spacing.\`
+
+🔗 **Pattern Chain / Similar Problems**:
+- *Subarray Sum Equals K*
+- *Longest Substring Without Repeating Characters*`
+  });
 
   return slides;
 };
