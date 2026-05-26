@@ -148,7 +148,7 @@ export const getDashboardStatsService = async (userId: string) => {
   const objectId = new mongoose.Types.ObjectId(userId);
 
   const [user, overallAgg, recentProgress, weakTopicsAgg, consistencyAgg] = await Promise.all([
-    User.findById(userId).select('streakCount lastCompletedDate name').lean(),
+    User.findById(userId).select('streakCount lastCompletedDate name totalSwipes totalScrolls').lean(),
     Progress.aggregate([
       { $match: { userId: objectId, revisionCardId: { $exists: true } } },
       {
@@ -234,6 +234,8 @@ export const getDashboardStatsService = async (userId: string) => {
   return {
     streakCount: user?.streakCount ?? 0,
     lastCompletedDate: user?.lastCompletedDate,
+    totalSwipes: user?.totalSwipes ?? 0,
+    totalScrolls: user?.totalScrolls ?? 0,
     totalRevisions: overall.totalRevisions,
     totalTimeSpent: overall.totalTimeSpent,
     favoritesCount: overall.favorites,
@@ -507,5 +509,27 @@ export const getResumeStateService = async (userId: string) => {
         completedLoops: pp?.completedLoops !== undefined ? pp.completedLoops : (p.completedLoops || 0),
       };
     }),
+  };
+};
+
+export const syncAnalyticsService = async (userId: string, swipes: number, scrolls: number) => {
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      $inc: {
+        totalSwipes: swipes,
+        totalScrolls: scrolls,
+      },
+    },
+    { new: true, select: 'totalSwipes totalScrolls' }
+  ).lean();
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return {
+    totalSwipes: user.totalSwipes ?? 0,
+    totalScrolls: user.totalScrolls ?? 0,
   };
 };

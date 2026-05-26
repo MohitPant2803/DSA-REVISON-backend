@@ -11,6 +11,7 @@ import {
   updateResumeStateService,
   getResumeStateService,
   reorderLikesService,
+  syncAnalyticsService,
 } from '../services/progress.service';
 import { AuthRequest } from '../middleware/authMiddleware';
 
@@ -68,4 +69,14 @@ export const reorderLikes = asyncHandler(async (req: AuthRequest, res: Response)
   }
   await reorderLikesService(req.user!._id.toString(), cardIds);
   successResponse(res, 200, 'Likes reordered successfully');
+});
+
+export const syncAnalytics = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { swipes, scrolls } = req.body;
+  if (typeof swipes !== 'number' || typeof scrolls !== 'number') {
+    res.status(400);
+    throw new Error('swipes and scrolls must be numbers');
+  }
+  const result = await syncAnalyticsService(req.user!._id.toString(), swipes, scrolls);
+  successResponse(res, 200, 'Analytics synced successfully', { result });
 });
