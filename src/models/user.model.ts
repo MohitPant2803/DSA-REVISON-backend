@@ -15,6 +15,7 @@ export interface IUser extends Document {
   lastCompletedDate?: Date;
   currentDomain?: string;
   currentCategory?: string;
+  currentRevision: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +43,7 @@ const UserSchema = new Schema<IUser>(
     preferences: { type: Schema.Types.Mixed, default: {} },
     currentDomain: { type: String },
     currentCategory: { type: String },
+    currentRevision: { type: Number, default: 0, required: true },
   },
   {
     // Timestamps are already set globally in db.ts, 

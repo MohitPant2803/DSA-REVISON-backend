@@ -14,6 +14,8 @@ export interface IFolder extends Document {
   order: number;
   parentFolderId?: Types.ObjectId | null;
   cardIds: Types.ObjectId[];
+  revision: number;
+  lastModifiedLogicalSequence: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +55,8 @@ const FolderSchema = new Schema<IFolder>(
       type: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
       default: [],
     },
+    revision: { type: Number, default: 0, index: true },
+    lastModifiedLogicalSequence: { type: Number, default: 0 },
   },
   { timestamps: true, versionKey: false }
 );

@@ -18,6 +18,8 @@ export interface IPlaylist extends Document {
   resumeTimestamp?: Date;
   cardIds?: mongoose.Types.ObjectId[];
   customOrderUpdatedAt?: Date;
+  revision: number;
+  lastModifiedLogicalSequence: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +43,8 @@ const PlaylistSchema = new Schema<IPlaylist>(
     resumeTimestamp: { type: Date },
     cardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
     customOrderUpdatedAt: { type: Date },
+    revision: { type: Number, default: 0, index: true },
+    lastModifiedLogicalSequence: { type: Number, default: 0 },
   },
   {
     timestamps: true,

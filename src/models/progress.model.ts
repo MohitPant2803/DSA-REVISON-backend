@@ -21,6 +21,9 @@ export interface IProgress extends Document {
   playlists?: mongoose.Types.ObjectId[];
   difficultyState?: 'easy' | 'medium' | 'hard' | 'skipped' | null;
   stateChangedAt?: Date;
+  revision: number;
+  favoriteLogicalSequence: number;
+  difficultyLogicalSequence: number;
 }
 
 const ProgressSchema = new Schema<IProgress>(
@@ -45,6 +48,9 @@ const ProgressSchema = new Schema<IProgress>(
     playlists: [{ type: Schema.Types.ObjectId, ref: 'Playlist' }],
     difficultyState: { type: String, enum: ['easy', 'medium', 'hard', 'skipped', null], default: null },
     stateChangedAt: { type: Date },
+    revision: { type: Number, default: 0, index: true },
+    favoriteLogicalSequence: { type: Number, default: 0 },
+    difficultyLogicalSequence: { type: Number, default: 0 },
   },
   {
     timestamps: true,
