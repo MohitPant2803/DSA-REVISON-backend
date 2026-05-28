@@ -149,10 +149,53 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
     session.startTransaction();
 
     try {
+      const authHeader = req.headers.authorization || '';
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
       for (const item of chunk) {
-        const { id: mutationId, action, payload, deviceId = 'legacy-device', logicalSequence = 0 } = item;
+        const { id: mutationId, action, payload, deviceId = 'legacy-device', logicalSequence = 0, signature } = item;
 
         if (!mutationId) continue;
+
+        // Loophole 91: Tamper Protection Validation
+        const canonicalSerialize = (obj: any): string => {
+          if (obj === null || obj === undefined) return 'null';
+          if (typeof obj !== 'object') {
+            if (typeof obj === 'number') {
+              return Number.isInteger(obj) ? obj.toString() : obj.toFixed(6);
+            }
+            return JSON.stringify(obj);
+          }
+          if (Array.isArray(obj)) {
+            return '[' + obj.map(canonicalSerialize).join(',') + ']';
+          }
+          const sortedKeys = Object.keys(obj).sort();
+          const pairs = sortedKeys.map(key => `"${key}":${canonicalSerialize(obj[key])}`);
+          return '{' + pairs.join(',') + '}';
+        };
+
+        const serialized = canonicalSerialize(payload);
+        const dataToSign = serialized + token;
+        const expectedSignature = crypto.createHash('sha256').update(dataToSign).digest('hex');
+
+        let isSignatureValid = signature === expectedSignature;
+        if (!isSignatureValid) {
+          let hash = 0;
+          for (let i = 0; i < dataToSign.length; i++) {
+            const char = dataToSign.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash = hash & hash;
+          }
+          const expectedFallback = Math.abs(hash).toString(16);
+          isSignatureValid = signature === expectedFallback;
+        }
+
+        if (signature && !isSignatureValid) {
+          console.warn(`[Batch Sync Tamper Protection] Invalid signature detected for mutation: ${mutationId}! Rejecting.`);
+          failedIds.push(mutationId);
+          permanentFailures.push(mutationId);
+          continue;
+        }
 
         // Idempotency: Atomic Pre-Insert Lock
         try {
@@ -440,7 +483,13 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
       await session.commitTransaction();
     } catch (chunkErr: any) {
       console.error(`[Batch Sync Chunk Error] Aborting transaction chunk:`, chunkErr.message);
-      await session.abortTransaction();
+      try {
+        if (session.inTransaction()) {
+          await session.abortTransaction();
+        }
+      } catch (abortErr: any) {
+        console.warn(`[Batch Sync Abort Safe-Guard] Abort transaction ignored/no-op:`, abortErr.message);
+      }
       // Mark mutations in failed chunk
       chunk.forEach((item) => {
         if (!processedIds.includes(item.id)) {

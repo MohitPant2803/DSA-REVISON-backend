@@ -10,10 +10,17 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
   console.log("Body received:", req.body);
 
   try {
-    const { idToken } = googleAuthSchema.parse(req.body);
+    const { idToken, deviceId, clockEpoch } = googleAuthSchema.parse(req.body);
 
     // Service handles the "Create if new / Login if existing" logic
     const user = await verifyGoogleTokenAndLogin(idToken);
+
+    if (deviceId) {
+      user.lastDeviceId = deviceId;
+      user.lastClockEpoch = clockEpoch || '';
+      await user.save();
+      console.log(`[Auth] Registered active device for user ${user.email}: Device ID ${deviceId}`);
+    }
 
     // Generate session token using the MongoDB _id (persisted either from creation or retrieval)
     const token = generateToken({ userId: user._id.toString(), role: user.role });
@@ -30,5 +37,19 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const deviceId = req.query.deviceId as string;
+  const clockEpoch = req.query.clockEpoch as string;
+
+  if (deviceId && req.user) {
+    const User = require('../models/user.model').default;
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        lastDeviceId: deviceId,
+        lastClockEpoch: clockEpoch || ''
+      }
+    });
+    console.log(`[Auth] Startup device sync completed for user ${req.user.email}: Device ID ${deviceId}`);
+  }
+
   return successResponse(res, 200, 'User profile retrieved successfully', { user: req.user });
 });

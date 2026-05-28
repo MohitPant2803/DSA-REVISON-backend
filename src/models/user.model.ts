@@ -16,6 +16,8 @@ export interface IUser extends Document {
   currentDomain?: string;
   currentCategory?: string;
   currentRevision: number;
+  lastDeviceId?: string;
+  lastClockEpoch?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +46,8 @@ const UserSchema = new Schema<IUser>(
     currentDomain: { type: String },
     currentCategory: { type: String },
     currentRevision: { type: Number, default: 0, required: true },
+    lastDeviceId: { type: String },
+    lastClockEpoch: { type: String },
   },
   {
     // Timestamps are already set globally in db.ts, 
