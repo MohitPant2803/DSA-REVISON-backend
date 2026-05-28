@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IDeletedEntity extends Document {
   userId: mongoose.Types.ObjectId;
   entityId: string;
-  entityType: 'folder' | 'playlist';
+  entityType: 'folder' | 'playlist' | 'card';
   revision: number;
   deletedAt: Date;
 }
@@ -11,12 +11,11 @@ export interface IDeletedEntity extends Document {
 const DeletedEntitySchema = new Schema<IDeletedEntity>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   entityId: { type: String, required: true },
-  entityType: { type: String, required: true, enum: ['folder', 'playlist'] },
+  entityType: { type: String, required: true, enum: ['folder', 'playlist', 'card'] },
   revision: { type: Number, required: true, index: true },
   deletedAt: { type: Date, default: Date.now, index: true }
 });
 
-// Tombstone Compaction: Automatically purge deletions older than 30 days
-DeletedEntitySchema.index({ deletedAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+DeletedEntitySchema.index({ userId: 1, entityId: 1, entityType: 1 }, { unique: true });
 
 export default mongoose.model<IDeletedEntity>('DeletedEntity', DeletedEntitySchema);

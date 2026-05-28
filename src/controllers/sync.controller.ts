@@ -100,12 +100,13 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
   const sinceStr = req.query.since as string;
   const since = sinceStr ? new Date(sinceStr) : new Date(0);
 
-  const [cards, folders, playlists, questionProgress, progress] = await Promise.all([
+  const [cards, folders, playlists, questionProgress, progress, deletedEntities] = await Promise.all([
     RevisionCard.find({ updatedAt: { $gt: since } }).lean(),
     Folder.find({ updatedAt: { $gt: since } }).lean(),
     Playlist.find({ userId, updatedAt: { $gt: since } }).lean(),
     UserQuestionProgress.find({ userId, updatedAt: { $gt: since } }).lean(),
     Progress.find({ userId, updatedAt: { $gt: since } }).lean(),
+    DeletedEntity.find({ userId, deletedAt: { $gt: since } }).lean(),
   ]);
 
   return successResponse(res, 200, 'Sync delta fetched successfully', {
@@ -117,6 +118,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       playlists,
       questionProgress,
       progress,
+      deletedEntities,
     },
   });
 });
@@ -355,7 +357,11 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
               if (resolvedPlaylistId && !resolvedPlaylistId.startsWith('temp-')) {
                 const nextRev = await getNextUserRevision(userId, session);
                 await deletePlaylistService(resolvedPlaylistId, userId);
-                await DeletedEntity.create([{ userId, entityId: resolvedPlaylistId, entityType: 'playlist', revision: nextRev }], { session });
+                await DeletedEntity.findOneAndUpdate(
+                  { userId, entityId: resolvedPlaylistId, entityType: 'playlist' },
+                  { $set: { revision: nextRev, deletedAt: new Date() } },
+                  { upsert: true, new: true, session }
+                );
               }
               break;
             }
@@ -413,7 +419,11 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
               if (resolvedFolderId && !resolvedFolderId.startsWith('temp-')) {
                 const nextRev = await getNextUserRevision(userId, session);
                 await deleteFolderById(resolvedFolderId, new mongoose.Types.ObjectId(userId), role);
-                await DeletedEntity.create([{ userId, entityId: resolvedFolderId, entityType: 'folder', revision: nextRev }], { session });
+                await DeletedEntity.findOneAndUpdate(
+                  { userId, entityId: resolvedFolderId, entityType: 'folder' },
+                  { $set: { revision: nextRev, deletedAt: new Date() } },
+                  { upsert: true, new: true, session }
+                );
               }
               break;
             }
@@ -460,7 +470,13 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
               }
               const { cardId } = payload;
               if (cardId && !cardId.startsWith('temp-')) {
+                const nextRev = await getNextUserRevision(userId, session);
                 await RevisionCard.findByIdAndDelete(cardId).session(session);
+                await DeletedEntity.findOneAndUpdate(
+                  { userId, entityId: cardId, entityType: 'card' },
+                  { $set: { revision: nextRev, deletedAt: new Date() } },
+                  { upsert: true, new: true, session }
+                );
               }
               break;
             }
