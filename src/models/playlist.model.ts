@@ -58,6 +58,20 @@ PlaylistSchema.pre('save', function (next) {
   } else if (this.name && !this.title) {
     this.title = this.name;
   }
+
+  if (this.cardIds?.length) {
+    const seen = new Set<string>();
+    this.cardIds = this.cardIds.filter((id) => {
+      const key = id.toString();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    this.itemCount = this.cardIds.length;
+  } else {
+    this.itemCount = 0;
+  }
+
   next();
 });
 
