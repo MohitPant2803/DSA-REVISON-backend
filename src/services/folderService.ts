@@ -2,6 +2,8 @@ import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import Folder, { IFolder } from '../models/folder.model';
 import RevisionCard from '../models/revisionCard.model';
+import FolderProgress from '../models/folderProgress.model';
+import UserCardState from '../models/userCardState.model';
 import {
   CreateFolderInput,
   QueryFoldersInput,
@@ -12,7 +14,7 @@ import { canManageResource, canReadResource, UserRole } from '../utils/permissio
 
 const populateCreator = { path: 'createdBy', select: 'name email profilePicture role' };
 
-async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[]) {
+async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[], userId?: string) {
   if (folders.length === 0) return [];
   const folderIds = folders.map(f => f._id);
 
@@ -79,6 +81,15 @@ async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[])
     }
   }
 
+  // Fetch materialized progress if userId is provided
+  const progressMap = new Map<string, any>();
+  if (userId) {
+    const progressList = await FolderProgress.find({ userId: new Types.ObjectId(userId) }).lean();
+    progressList.forEach((p: any) => {
+      progressMap.set(p.folderId.toString(), p);
+    });
+  }
+
   // Assemble final results in-memory
   return folders.map(folder => {
     const folderIdStr = folder._id.toString();
@@ -89,9 +100,12 @@ async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[])
       recursiveCount += directCountMap.get(dId) || 0;
     });
 
+    const progress = progressMap.get(folderIdStr);
+
     return {
       ...folder,
-      cardCount: recursiveCount,
+      cardCount: progress && progress.totalCount !== undefined ? progress.totalCount : recursiveCount,
+      seenCardCount: progress && progress.seenCount !== undefined ? progress.seenCount : 0,
       hasSubfolders: subfoldersParentSet.has(folderIdStr),
     };
   });
@@ -104,7 +118,7 @@ function buildVisibilityFilter(actorRole?: UserRole) {
   return { visibility: 'public' };
 }
 
-export const queryFolders = async (query: QueryFoldersInput, actorRole?: UserRole) => {
+export const queryFolders = async (query: QueryFoldersInput, actorRole?: UserRole, userId?: string) => {
   const { page = '1', limit = '50', search, parentFolderId } = query;
   const pageNum = parseInt(page, 10);
   const limitNum = parseInt(limit, 10);
@@ -132,7 +146,7 @@ export const queryFolders = async (query: QueryFoldersInput, actorRole?: UserRol
     .populate(populateCreator)
     .lean();
 
-  const withCounts = await attachCardCounts(results);
+  const withCounts = await attachCardCounts(results, userId);
 
   return {
     results: withCounts,
@@ -143,7 +157,7 @@ export const queryFolders = async (query: QueryFoldersInput, actorRole?: UserRol
   };
 };
 
-export const getFolderById = async (folderId: string, actorRole?: UserRole) => {
+export const getFolderById = async (folderId: string, actorRole?: UserRole, userId?: string) => {
   if (!Types.ObjectId.isValid(folderId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
   }
@@ -193,7 +207,27 @@ export const getFolderById = async (folderId: string, actorRole?: UserRole) => {
     folderId: { $in: descendantObjectIds }
   });
   const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
-  return { ...folder, cardCount, hasSubfolders: childFolders.length > 0 };
+
+  let seenCardCount = 0;
+  let finalCardCount = cardCount;
+
+  if (userId) {
+    const progress = await FolderProgress.findOne({
+      userId: new Types.ObjectId(userId),
+      folderId: folder._id
+    }).lean();
+    if (progress) {
+      seenCardCount = progress.seenCount || 0;
+      finalCardCount = progress.totalCount !== undefined ? progress.totalCount : cardCount;
+    }
+  }
+
+  return { 
+    ...folder, 
+    cardCount: finalCardCount, 
+    seenCardCount, 
+    hasSubfolders: childFolders.length > 0 
+  };
 };
 
 export const createFolder = async (data: CreateFolderInput, userId: Types.ObjectId): Promise<IFolder> => {
@@ -292,4 +326,71 @@ export const reorderFolderCards = async (
   folder.cardIds = cardIds.map(id => new Types.ObjectId(id));
   await folder.save();
   return folder;
+};
+
+export const reconcileFolderCounts = async (userId: string) => {
+  const uid = new Types.ObjectId(userId);
+  
+  // 1. Fetch direct card counts grouped by folder
+  const countsAgg = await RevisionCard.aggregate([
+    { $match: { isDeleted: false } },
+    {
+      $project: {
+        folderAssociations: {
+          $setUnion: [
+            [ { $ifNull: [ "$folderId", null ] }, { $ifNull: [ "$rootFolderId", null ] } ],
+            { $ifNull: [ "$subfolderIds", [] ] }
+          ]
+        }
+      }
+    },
+    { $unwind: "$folderAssociations" },
+    { $group: { _id: "$folderAssociations", count: { $sum: 1 } } }
+  ]);
+  
+  // 2. Fetch viewed card counts grouped by folder
+  const viewedStates = await UserCardState.find({ userId: uid, viewed: true }).select('cardId').lean();
+  const viewedCardIds = viewedStates.map((s: any) => s.cardId);
+  
+  const viewedAgg = await RevisionCard.aggregate([
+    { $match: { _id: { $in: viewedCardIds }, isDeleted: false } },
+    {
+      $project: {
+        folderAssociations: {
+          $setUnion: [
+            [ { $ifNull: [ "$folderId", null ] }, { $ifNull: [ "$rootFolderId", null ] } ],
+            { $ifNull: [ "$subfolderIds", [] ] }
+          ]
+        }
+      }
+    },
+    { $unwind: "$folderAssociations" },
+    { $group: { _id: "$folderAssociations", count: { $sum: 1 } } }
+  ]);
+
+  const directCountMap = new Map(countsAgg.map(i => [i._id.toString(), i.count]));
+  const directViewedMap = new Map(viewedAgg.map(i => [i._id.toString(), i.count]));
+
+  // 3. Perform a transactional overwrite on FolderProgress to reconcile counts
+  const folders = await Folder.find({}).select('_id').lean();
+  const bulkOps = folders.map(f => {
+    const folderIdStr = f._id.toString();
+    return {
+      updateOne: {
+        filter: { userId: uid, folderId: f._id },
+        update: {
+          $set: {
+            totalCount: directCountMap.get(folderIdStr) || 0,
+            seenCount: directViewedMap.get(folderIdStr) || 0,
+            updatedAt: new Date()
+          }
+        },
+        upsert: true
+      }
+    };
+  });
+  
+  if (bulkOps.length > 0) {
+    await FolderProgress.bulkWrite(bulkOps);
+  }
 };

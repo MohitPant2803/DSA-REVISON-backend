@@ -100,10 +100,10 @@ export const getUserPreferences = async (userId: string): Promise<IUserReelPrefe
 };
 
 // 2. Update user folder preferences with server-side validations
-export const updateUserPreferences = async (
+export async function updateUserPreferences(
   userId: string,
   selectedRootFolderIds: string[]
-): Promise<IUserReelPreference> => {
+): Promise<IUserReelPreference> {
   if (!selectedRootFolderIds || selectedRootFolderIds.length === 0) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'At least one root folder must remain active');
   }
@@ -136,17 +136,17 @@ export const updateUserPreferences = async (
     { new: true, upsert: true }
   );
 
-  // HARD INVALIDATION: instanstly clear the user active session so they get a fresh queue
-  await UserReelSession.deleteOne({ userId: new Types.ObjectId(userId) });
+  // Regenerate session inline and preserve maximum distance covered index progress
+  await generateReelsQueue(userId, 'preference_change');
 
   return preference;
-};
+}
 
 // 3. Generate balanced, interleaved queue deterministic session
-export const generateReelsQueue = async (
+export async function generateReelsQueue(
   userId: string,
   triggerReason: 'preference_change' | 'scroll_refill' | 'session_start' = 'session_start'
-): Promise<IUserReelSession> => {
+): Promise<IUserReelSession> {
   const uid = new Types.ObjectId(userId);
   
   // Retrieve user root folder preferences
@@ -348,8 +348,16 @@ export const generateReelsQueue = async (
 
     // Update session queue document
     session.queue = finalQueueIds.slice(0, samplingCap);
-    session.currentIndex = 0;
-    session.deepestIndexReached = 0;
+    if (triggerReason === 'preference_change') {
+      // Clamp index in case new queue is smaller than previous index progress
+      session.currentIndex = Math.min(session.currentIndex, session.queue.length - 1);
+      session.deepestIndexReached = Math.min(session.deepestIndexReached, session.queue.length - 1);
+      if (session.currentIndex < 0) session.currentIndex = 0;
+      if (session.deepestIndexReached < 0) session.deepestIndexReached = 0;
+    } else {
+      session.currentIndex = 0;
+      session.deepestIndexReached = 0;
+    }
     session.contentHash = hash;
     session.eligibleCardCount = cardCount;
     session.selectedFolderSnapshot = selectedFolders;
@@ -399,6 +407,12 @@ export const getSessionSlice = async (userId: string): Promise<any> => {
   }
 
   let currentIdx = session.currentIndex;
+  const nextUnseenIdx = session.deepestIndexReached + 1;
+  if (nextUnseenIdx < queueLength && currentIdx < nextUnseenIdx) {
+    currentIdx = nextUnseenIdx;
+    session.currentIndex = currentIdx;
+    await session.save();
+  }
   let sliceIds: Types.ObjectId[] = [];
   let orderedSlice: any[] = [];
   let refillRetries = 0;
@@ -455,6 +469,7 @@ export const getSessionSlice = async (userId: string): Promise<any> => {
 
   return {
     queueLength,
+    orderedCardIds: session.queue,
     startIdx: Math.max(0, currentIdx - PREVIOUS_WINDOW_SIZE),
     currentIndex: session.currentIndex,
     deepestIndexReached: session.deepestIndexReached,

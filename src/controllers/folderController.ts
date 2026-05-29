@@ -14,13 +14,15 @@ export const createFolderHandler = asyncHandler(async (req: AuthRequest, res: Re
 
 export const getFoldersHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   const role = req.user?.role as UserRole | undefined;
-  const result = await folderService.queryFolders(req.query as unknown as QueryFoldersInput, role);
+  const userId = req.user?._id?.toString();
+  const result = await folderService.queryFolders(req.query as unknown as QueryFoldersInput, role, userId);
   res.status(httpStatus.OK).json(result);
 });
 
 export const getFolderByIdHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   const role = req.user?.role as UserRole | undefined;
-  const folder = await folderService.getFolderById(req.params.id, role);
+  const userId = req.user?._id?.toString();
+  const folder = await folderService.getFolderById(req.params.id, role, userId);
   res.status(httpStatus.OK).json(folder);
 });
 

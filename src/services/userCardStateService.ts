@@ -44,11 +44,57 @@ export const toggleWatchLater = async (userId: string, cardId: string): Promise<
 };
 
 export const markViewed = async (userId: string, cardId: string): Promise<IUserCardState> => {
-  const state = await getUserCardState(userId, cardId);
-  state.viewed = true;
-  state.lastViewedAt = new Date();
-  await state.save();
-  return state;
+  const uid = new Types.ObjectId(userId);
+  const cid = new Types.ObjectId(cardId);
+
+  try {
+    // 1. Atomically attempt to transition state from viewed: false/null to viewed: true
+    const updatedState = await UserCardState.findOneAndUpdate(
+      { userId: uid, cardId: cid, viewed: { $ne: true } },
+      { 
+        $set: { viewed: true, lastViewedAt: new Date() },
+        $inc: { viewCount: 1 }
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    // 2. If it is a new transition (viewCount transitioned to 1)
+    if (updatedState && updatedState.viewCount === 1) {
+      const card = await RevisionCard.findById(cid).select('folderId rootFolderId subfolderIds').lean();
+      if (card) {
+        const associatedFolderIds: Types.ObjectId[] = [];
+        if (card.folderId) associatedFolderIds.push(card.folderId);
+        if (card.rootFolderId && card.rootFolderId.toString() !== card.folderId.toString()) {
+          associatedFolderIds.push(card.rootFolderId);
+        }
+        if (card.subfolderIds && Array.isArray(card.subfolderIds)) {
+          card.subfolderIds.forEach((id: any) => {
+            if (id && !associatedFolderIds.some(x => x.toString() === id.toString())) {
+              associatedFolderIds.push(id);
+            }
+          });
+        }
+
+        if (associatedFolderIds.length > 0) {
+          // Increment FolderProgress for all associated folder levels atomically
+          const FolderProgress = mongoose.model('FolderProgress');
+          await FolderProgress.updateMany(
+            { userId: uid, folderId: { $in: associatedFolderIds } },
+            { $inc: { seenCount: 1 } },
+            { upsert: true }
+          );
+        }
+      }
+    }
+  } catch (err: any) {
+    // If a duplicate key error (code 11000) is thrown, it was concurrently marked or already exists.
+    if (err.code !== 11000) {
+      throw err;
+    }
+  }
+
+  // Fetch the final absolute state to return safely
+  return (await getUserCardState(userId, cardId)) as IUserCardState;
 };
 
 export const getLikedCards = async (userId: string, query: { page?: string; limit?: string }) => {

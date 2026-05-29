@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { successResponse } from '../utils/responseHandler';
 import { updateProgressSchema } from '../validators/progress.validator';
+import * as folderService from '../services/folderService';
 import {
   updateProgressService,
   getDashboardStatsService,
@@ -22,7 +23,11 @@ export const updateProgress = asyncHandler(async (req: AuthRequest, res: Respons
 });
 
 export const getMyStats = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const stats = await getDashboardStatsService(req.user!._id.toString());
+  const userId = req.user!._id.toString();
+  // Trigger background count reconciliation dynamically to keep seen/total counts drift-free
+  folderService.reconcileFolderCounts(userId).catch(err => console.error('[Reconcile Progress Counts Error]', err));
+
+  const stats = await getDashboardStatsService(userId);
   successResponse(res, 200, 'User stats fetched successfully', { stats });
 });
 

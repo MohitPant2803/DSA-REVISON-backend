@@ -6,6 +6,8 @@ export interface IFolderProgress extends Document {
   completedLoops: number;
   lastCompletedAt?: Date;
   totalCardsViewed: number;
+  seenCount: number;
+  totalCount: number;
   resumeCardId?: Types.ObjectId;
   lastCardId?: Types.ObjectId;
   resumeIndex?: number;
@@ -33,6 +35,8 @@ const FolderProgressSchema = new Schema<IFolderProgress>(
     completedLoops: { type: Number, default: 0 },
     lastCompletedAt: { type: Date },
     totalCardsViewed: { type: Number, default: 0 },
+    seenCount: { type: Number, default: 0 },
+    totalCount: { type: Number, default: 0 },
     resumeCardId: { type: Schema.Types.ObjectId, ref: 'RevisionCard' },
     lastCardId: { type: Schema.Types.ObjectId, ref: 'RevisionCard' },
     resumeIndex: { type: Number },
