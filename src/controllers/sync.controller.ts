@@ -547,6 +547,8 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
     }
   }
 
+  console.log(`[BACKEND SYNC BATCH] Completed chunk processing. Processed: ${processedIds.length} mutations. Failed: ${failedIds.length} mutations.`);
+
   return successResponse(res, 200, 'Batch actions processed successfully', {
     processedIds,
     failedIds,

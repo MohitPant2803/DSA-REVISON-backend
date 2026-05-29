@@ -2,9 +2,52 @@ import mongoose from 'mongoose';
 import UserQuestionProgress, { AttemptStatus, PerceivedDifficulty } from '../models/userQuestionProgress.model';
 import Progress from '../models/progress.model';
 import RevisionCard from '../models/revisionCard.model';
+import User from '../models/user.model';
 import ApiError from '../utils/ApiError';
 import httpStatus from 'http-status';
 import { ensureUserSystemPlaylists } from './playlist.service';
+
+/**
+ * Atomically syncs the User.focusXxxCardIds arrays in MongoDB.
+ * 1. Pull the questionObjectId from ALL 4 focus area arrays (clean slate).
+ * 2. If a non-null state is provided, $addToSet it into the matching array.
+ */
+async function atomicSyncFocusArea(
+  userObjectId: mongoose.Types.ObjectId,
+  questionObjectId: mongoose.Types.ObjectId,
+  state: 'easy' | 'medium' | 'hard' | 'skipped' | null
+): Promise<void> {
+  try {
+    // Step 1: Pull from all 4 arrays
+    await User.findByIdAndUpdate(userObjectId, {
+      $pull: {
+        focusEasyCardIds: questionObjectId,
+        focusMediumCardIds: questionObjectId,
+        focusHardCardIds: questionObjectId,
+        focusSkippedCardIds: questionObjectId,
+      },
+    });
+
+    // Step 2: Push into the correct array (skip if resetting to null)
+    if (state) {
+      const fieldMap: Record<string, string> = {
+        easy: 'focusEasyCardIds',
+        medium: 'focusMediumCardIds',
+        hard: 'focusHardCardIds',
+        skipped: 'focusSkippedCardIds',
+      };
+      const listField = fieldMap[state];
+      if (listField) {
+        await User.findByIdAndUpdate(userObjectId, {
+          $addToSet: { [listField]: questionObjectId },
+        });
+      }
+    }
+    console.log(`[Focus Area Sync] User ${userObjectId} | Card ${questionObjectId} -> ${state ?? 'removed'}`);
+  } catch (err: any) {
+    console.error(`[Focus Area Sync Error] Failed to sync focus area: ${err.message}`);
+  }
+}
 
 export const updateUserQuestionProgress = async (
   userId: string,
@@ -32,6 +75,7 @@ export const updateUserQuestionProgress = async (
       { upsert: true, new: true, setDefaultsOnInsert: true }
     ).catch(console.error);
     await ensureUserSystemPlaylists(userId);
+    await atomicSyncFocusArea(userObjectId, questionObjectId, null);
     return null;
   }
 
@@ -54,6 +98,7 @@ export const updateUserQuestionProgress = async (
         { upsert: true, new: true, setDefaultsOnInsert: true }
       ).catch(console.error);
       await ensureUserSystemPlaylists(userId);
+      await atomicSyncFocusArea(userObjectId, questionObjectId, null);
       return null;
     }
   }
@@ -88,5 +133,6 @@ export const updateUserQuestionProgress = async (
   ).catch(console.error);
 
   await ensureUserSystemPlaylists(userId);
+  await atomicSyncFocusArea(userObjectId, questionObjectId, state);
   return result;
 };

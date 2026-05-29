@@ -18,6 +18,10 @@ export interface IUser extends Document {
   currentRevision: number;
   lastDeviceId?: string;
   lastClockEpoch?: string;
+  focusEasyCardIds?: mongoose.Types.ObjectId[];
+  focusMediumCardIds?: mongoose.Types.ObjectId[];
+  focusHardCardIds?: mongoose.Types.ObjectId[];
+  focusSkippedCardIds?: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +52,10 @@ const UserSchema = new Schema<IUser>(
     currentRevision: { type: Number, default: 0, required: true },
     lastDeviceId: { type: String },
     lastClockEpoch: { type: String },
+    focusEasyCardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
+    focusMediumCardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
+    focusHardCardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
+    focusSkippedCardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
   },
   {
     // Timestamps are already set globally in db.ts, 
