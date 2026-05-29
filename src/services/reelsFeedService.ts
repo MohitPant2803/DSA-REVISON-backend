@@ -6,6 +6,7 @@ import Folder from '../models/folder.model';
 import RevisionCard from '../models/revisionCard.model';
 import UserReelPreference, { IUserReelPreference } from '../models/userReelPreference.model';
 import UserReelSession, { IUserReelSession } from '../models/userReelSession.model';
+import UserCardState from '../models/userCardState.model';
 
 // Configurable constants
 const MAX_QUEUE_SIZE = 2000;
@@ -142,7 +143,10 @@ export const updateUserPreferences = async (
 };
 
 // 3. Generate balanced, interleaved queue deterministic session
-export const generateReelsQueue = async (userId: string): Promise<IUserReelSession> => {
+export const generateReelsQueue = async (
+  userId: string,
+  triggerReason: 'preference_change' | 'scroll_refill' | 'session_start' = 'session_start'
+): Promise<IUserReelSession> => {
   const uid = new Types.ObjectId(userId);
   
   // Retrieve user root folder preferences
@@ -236,21 +240,67 @@ export const generateReelsQueue = async (userId: string): Promise<IUserReelSessi
       }
     });
 
-    // Proportional sampling & Shuffling within folders independently
+    // 1. Fetch Viewed States for the user
+    const viewedStates = await UserCardState.find({ userId: uid, viewed: true }).select('cardId').lean();
+    const viewedCardIds = new Set(viewedStates.map(s => s.cardId.toString()));
+
     const folderSampledLists: Types.ObjectId[][] = [];
+    let cardsToReset: Types.ObjectId[] = [];
+    let unseenEligibleCardCount = 0;
     
     for (const folderId of selectedFolders) {
       const groupCards = folderCardGroups[folderId.toString()] || [];
       if (groupCards.length === 0) continue;
 
-      // Seeded Fisher-Yates group shuffle
-      const shuffledGroup = seededShuffle(groupCards, prng);
+      const viewedInFolder = groupCards.filter(c => viewedCardIds.has(c.toString()));
+      let unseenGroupCards: Types.ObjectId[] = [];
 
-      // Determine proportional size allocation
-      const allocation = Math.round((groupCards.length / cardCount) * samplingCap);
-      const folderSample = shuffledGroup.slice(0, Math.max(1, allocation));
+      // 2. Evaluate Folder Exhaustion
+      // Skip reset if triggerReason is 'preference_change'
+      const isExhausted = viewedInFolder.length >= groupCards.length;
       
-      folderSampledLists.push(folderSample);
+      if (isExhausted && triggerReason !== 'preference_change') {
+        // Reset this folder
+        cardsToReset.push(...groupCards);
+        unseenGroupCards = [...groupCards]; // Everything is unseen now
+      } else {
+        // Filter to unseen
+        unseenGroupCards = groupCards.filter(c => !viewedCardIds.has(c.toString()));
+      }
+
+      if (unseenGroupCards.length === 0) continue; // Safety catch
+      
+      unseenEligibleCardCount += unseenGroupCards.length;
+
+      // Seeded Fisher-Yates group shuffle on UNSEEN cards
+      const shuffledGroup = seededShuffle(unseenGroupCards, prng);
+      folderSampledLists.push(shuffledGroup);
+    }
+
+    // Emergency fallback if ALL folders are exhausted and reset was skipped due to preference_change
+    if (unseenEligibleCardCount === 0 && selectedFolders.length > 0) {
+      for (const folderId of selectedFolders) {
+        const groupCards = folderCardGroups[folderId.toString()] || [];
+        if (groupCards.length === 0) continue;
+        const shuffledGroup = seededShuffle(groupCards, prng);
+        folderSampledLists.push(shuffledGroup);
+        unseenEligibleCardCount += groupCards.length;
+      }
+    }
+
+    // 3. Batch Reset Exhausted Folders
+    if (cardsToReset.length > 0) {
+      await UserCardState.updateMany(
+        { userId: uid, cardId: { $in: cardsToReset } },
+        { $set: { viewed: false } }
+      );
+    }
+
+    // Re-adjust proportional size allocations based on exact unseen eligible count
+    for (let i = 0; i < folderSampledLists.length; i++) {
+      const pool = folderSampledLists[i];
+      const allocation = Math.round((pool.length / Math.max(1, unseenEligibleCardCount)) * samplingCap);
+      folderSampledLists[i] = pool.slice(0, Math.max(1, allocation));
     }
 
     // Interleave proportional card groups using weighted folder fatigue scores
@@ -327,7 +377,7 @@ export const getSessionSlice = async (userId: string): Promise<any> => {
   const isExpired = session && session.expiresAt.getTime() <= Date.now();
 
   if (!session || isExpired) {
-    session = await generateReelsQueue(userId);
+    session = await generateReelsQueue(userId, 'session_start');
   } else {
     // Reconcile and validate current content hash
     const prefs = await getUserPreferences(userId);
@@ -335,7 +385,7 @@ export const getSessionSlice = async (userId: string): Promise<any> => {
     
     if (session.contentHash !== hash) {
       // Soft Invalidation: trigger async background regeneration, serve current in the meantime
-      generateReelsQueue(userId).catch(err => console.error('[Async Regeneration Failure]', err));
+      generateReelsQueue(userId, 'preference_change').catch(err => console.error('[Async Regeneration Failure]', err));
     }
   }
 
@@ -384,7 +434,7 @@ export const getSessionSlice = async (userId: string): Promise<any> => {
       
       if (currentIdx >= queueLength) {
         // Queue Exhausted due to deletions - force full queue regeneration
-        session = await generateReelsQueue(userId);
+        session = await generateReelsQueue(userId, 'scroll_refill');
         currentIdx = 0;
       } else {
         session.currentIndex = currentIdx;
@@ -399,7 +449,7 @@ export const getSessionSlice = async (userId: string): Promise<any> => {
   if (refillRetries >= 3) {
     // If refill loops hit repeated deletions, execute direct hard regeneration
     console.warn(`[Refill Loop Guard] Hit high density deletion bounds. Triggering hard replenishment...`);
-    session = await generateReelsQueue(userId);
+    session = await generateReelsQueue(userId, 'scroll_refill');
     return getSessionSlice(userId);
   }
 
@@ -456,7 +506,7 @@ export const updateSessionIndex = async (
     // Throttle guard: only allow pre-generation max once every 3 minutes
     const timeSinceLastUpdate = Date.now() - session.updatedAt.getTime();
     if (timeSinceLastUpdate > 3 * 60 * 1000) {
-      generateReelsQueue(userId).catch(err => console.error('[Pre-Regeneration Failure]', err));
+      generateReelsQueue(userId, 'scroll_refill').catch(err => console.error('[Pre-Regeneration Failure]', err));
     }
   }
 
