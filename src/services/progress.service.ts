@@ -7,6 +7,7 @@ import UserQuestionProgress from '../models/userQuestionProgress.model';
 import '../models/folderProgress.model';
 import '../models/playlistProgress.model';
 import '../models/playlist.model';
+import { ensureUserSystemPlaylists } from './playlist.service';
 import { updateProgressSchema } from '../validators/progress.validator';
 import { z } from 'zod';
 
@@ -62,6 +63,7 @@ export const updateProgressService = async (userId: string, data: ProgressUpdate
           { upsert: true, new: true, setDefaultsOnInsert: true }
         );
       }
+      await ensureUserSystemPlaylists(userId);
     }
   }
 

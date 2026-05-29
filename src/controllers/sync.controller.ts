@@ -20,7 +20,9 @@ import {
   reorderPlaylistService,
   createPlaylistService,
   deletePlaylistService,
-  updatePlaylistService
+  updatePlaylistService,
+  getClientPlaylistsForSyncService,
+  ensureUserSystemPlaylists
 } from '../services/playlist.service';
 import { 
   createFolder, 
@@ -33,6 +35,7 @@ const CURRENT_DB_VERSION = 'striver-sde-sheet-v4';
 export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!._id;
   const sinceRevisionStr = req.query.sinceRevision as string;
+  const allowRemoteDestructiveSync = (req.user as any)?.preferences?.allowRemoteDestructiveSync === true;
   
   if (sinceRevisionStr !== undefined) {
     const sinceRevision = Number(sinceRevisionStr || 0);
@@ -66,8 +69,8 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
         };
 
     const playlistQuery = sinceRevision === 0
-      ? { userId }
-      : { userId, revision: { $gt: sinceRevision } };
+      ? null
+      : { userId, kind: { $ne: 'system' }, revision: { $gt: sinceRevision } };
 
     const progressQuery = sinceRevision === 0
       ? { userId }
@@ -80,7 +83,9 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
     const [cards, folders, playlists, questionProgress, progress, deletedEntities] = await Promise.all([
       RevisionCard.find({ updatedAt: { $gt: sinceDate } }).lean(),
       Folder.find(folderQuery).lean(),
-      Playlist.find(playlistQuery).lean(),
+      playlistQuery
+        ? Playlist.find(playlistQuery).lean()
+        : getClientPlaylistsForSyncService(userId.toString()),
       UserQuestionProgress.find({ userId, updatedAt: { $gt: sinceDate } }).lean(),
       Progress.find(progressQuery).lean(),
       DeletedEntity.find(deletedEntitiesQuery).lean(),
@@ -88,7 +93,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
 
     // Cryptographic Checksum Fingerprint calculation of all current user-owned ObjectIds
     const [activePlaylists, activeFolders] = await Promise.all([
-      Playlist.find({ userId }).select('_id').sort({ _id: 1 }).lean(),
+      Playlist.find({ userId, kind: { $ne: 'system' } }).select('_id').sort({ _id: 1 }).lean(),
       Folder.find({ createdBy: userId }).select('_id').sort({ _id: 1 }).lean()
     ]);
 
@@ -99,6 +104,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
 
     return successResponse(res, 200, 'Sync delta fetched successfully', {
       requiresFullResync: false,
+      allowRemoteDestructiveSync,
       fromRevision: sinceRevision,
       toRevision: currentRevision,
       dbVersion: CURRENT_DB_VERSION,
@@ -125,7 +131,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
   const [cards, folders, playlists, questionProgress, progress, deletedEntities] = await Promise.all([
     RevisionCard.find({ updatedAt: { $gt: since } }).lean(),
     Folder.find({ updatedAt: { $gt: since } }).lean(),
-    Playlist.find({ userId, updatedAt: { $gt: since } }).lean(),
+    getClientPlaylistsForSyncService(userId.toString()),
     UserQuestionProgress.find({ userId, updatedAt: { $gt: since } }).lean(),
     Progress.find({ userId, updatedAt: { $gt: since } }).lean(),
     DeletedEntity.find({ userId, deletedAt: { $gt: since } }).lean(),
@@ -134,6 +140,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
   return successResponse(res, 200, 'Sync delta fetched successfully', {
     timestamp: new Date(),
     dbVersion: CURRENT_DB_VERSION,
+    allowRemoteDestructiveSync,
     delta: {
       cards,
       folders,
@@ -262,6 +269,7 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
                     },
                     { upsert: true, new: true, session }
                   );
+                  await ensureUserSystemPlaylists(userId);
                 } else {
                   console.log(`[CRDT-lite Lock] Discarding classification for card: ${cardId}. Out-of-order sequence.`);
                 }

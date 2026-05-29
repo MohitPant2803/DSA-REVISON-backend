@@ -5,6 +5,136 @@ import Progress from '../models/progress.model';
 import UserQuestionProgress from '../models/userQuestionProgress.model';
 import UserCardState from '../models/userCardState.model';
 
+const SYSTEM_PLAYLISTS = [
+  { systemKey: 'easy', name: 'Easy', description: 'Dynamic list of cards you marked as Easy', color1: '#10B981', color2: '#059669' },
+  { systemKey: 'medium', name: 'Medium', description: 'Dynamic list of cards you marked as Medium', color1: '#F59E0B', color2: '#D97706' },
+  { systemKey: 'hard', name: 'Hard', description: 'Dynamic list of cards you marked as Hard', color1: '#EF4444', color2: '#DC2626' },
+  { systemKey: 'skipped', name: 'Skipped', description: 'Dynamic list of cards you skipped', color1: '#64748B', color2: '#475569' },
+] as const;
+
+type SystemPlaylistKey = typeof SYSTEM_PLAYLISTS[number]['systemKey'];
+
+const isSystemPlaylistKey = (playlistId: string): playlistId is SystemPlaylistKey =>
+  SYSTEM_PLAYLISTS.some((p) => p.systemKey === playlistId);
+
+const toClientPlaylist = (playlist: any) => {
+  if (playlist.kind === 'system' && playlist.systemKey) {
+    return {
+      ...playlist,
+      mongoId: playlist._id?.toString(),
+      _id: playlist.systemKey,
+      id: playlist.systemKey,
+      orderedCardIds: playlist.cardIds || [],
+    };
+  }
+
+  return {
+    ...playlist,
+    _id: playlist._id?.toString?.() || playlist._id,
+    id: playlist._id?.toString?.() || playlist._id,
+    orderedCardIds: playlist.cardIds || playlist.orderedCardIds || [],
+  };
+};
+
+const getSystemPlaylistCardIds = async (userId: string, systemKey: SystemPlaylistKey) => {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+  const filterQuery: any = { userId: userObjectId };
+
+  if (systemKey === 'skipped') {
+    filterQuery.attemptStatus = 'skipped';
+  } else {
+    filterQuery.attemptStatus = 'attempted';
+    filterQuery.perceivedDifficultyByUser = systemKey;
+  }
+
+  const progressRecords = await UserQuestionProgress.find(filterQuery)
+    .populate({ path: 'questionId', select: 'title' })
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  const seenTitles = new Set<string>();
+  const cardIds: mongoose.Types.ObjectId[] = [];
+
+  progressRecords.forEach((p: any) => {
+    const card = p.questionId;
+    if (!card?._id || !card.title) return;
+    const titleKey = card.title.trim().toLowerCase();
+    if (seenTitles.has(titleKey)) return;
+    seenTitles.add(titleKey);
+    cardIds.push(card._id);
+  });
+
+  return cardIds;
+};
+
+export const ensureUserSystemPlaylists = async (userId: string) => {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  const docs = await Promise.all(
+    SYSTEM_PLAYLISTS.map(async (def) => {
+      const cardIds = await getSystemPlaylistCardIds(userId, def.systemKey);
+      return Playlist.findOneAndUpdate(
+        { userId: userObjectId, kind: 'system', systemKey: def.systemKey },
+        {
+          $set: {
+            userId: userObjectId,
+            kind: 'system',
+            systemKey: def.systemKey,
+            name: def.name,
+            title: def.name,
+            description: def.description,
+            color1: def.color1,
+            color2: def.color2,
+            cardIds,
+            itemCount: cardIds.length,
+          },
+          $setOnInsert: {
+            completedLoops: 0,
+            totalCardsViewed: 0,
+          },
+        },
+        { upsert: true, new: true }
+      ).lean();
+    })
+  );
+
+  return docs;
+};
+
+export const getUserPlaylistCatalogSummary = async (userId: string) => {
+  await ensureUserSystemPlaylists(userId);
+  const playlists = await Playlist.find({ userId }).sort({ kind: -1, updatedAt: -1 }).lean();
+
+  const focusAreaPlaylists = playlists.filter((playlist: any) => playlist.kind === 'system');
+  const selfMadePlaylists = playlists.filter((playlist: any) => playlist.kind !== 'system');
+  const rows = playlists.map((playlist: any) => ({
+    type: playlist.kind === 'system' ? 'focus-area' : 'self-made',
+    key: playlist.systemKey || playlist._id.toString(),
+    name: playlist.name,
+    cards: Array.isArray(playlist.cardIds) ? playlist.cardIds.length : (playlist.itemCount || 0),
+  }));
+
+  return {
+    focusAreaCount: focusAreaPlaylists.length,
+    selfMadeCount: selfMadePlaylists.length,
+    totalPlaylistCount: playlists.length,
+    totalCardRefs: rows.reduce((sum, row) => sum + row.cards, 0),
+    rows,
+  };
+};
+
+export const logUserPlaylistCatalogSummary = async (userId: string, email?: string) => {
+  const summary = await getUserPlaylistCatalogSummary(userId);
+
+  console.log(`[Personal Catalog] User: ${email || userId}`);
+  console.log(
+    `[Personal Catalog] Total playlists: ${summary.totalPlaylistCount} | Focus areas: ${summary.focusAreaCount} | Self-made: ${summary.selfMadeCount} | Card refs: ${summary.totalCardRefs}`
+  );
+  console.table(summary.rows);
+
+  return summary;
+};
+
 export const createPlaylistService = async (userId: string, data: any): Promise<IPlaylist> => {
   const uniqueCardIds = Array.isArray(data.cardIds)
     ? Array.from(new Set<string>(data.cardIds.map((id: any) => id.toString())))
@@ -15,100 +145,24 @@ export const createPlaylistService = async (userId: string, data: any): Promise<
   return Playlist.create({
     ...data,
     userId,
+    kind: 'custom',
     cardIds: uniqueCardIds,
     itemCount: uniqueCardIds.length,
   });
 };
 
 export const getUserPlaylistsService = async (userId: string): Promise<any[]> => {
-  const userObjectId = new mongoose.Types.ObjectId(userId);
-
-  const getUniqueCount = async (matchQuery: any) => {
-    const result = await UserQuestionProgress.aggregate([
-      { $match: matchQuery },
-      {
-        $lookup: {
-          from: 'revisioncards',
-          localField: 'questionId',
-          foreignField: '_id',
-          as: 'card',
-        },
-      },
-      { $unwind: '$card' },
-      { $group: { _id: { $trim: { input: { $toLower: '$card.title' } } } } },
-      { $count: 'uniqueCount' },
-    ]);
-    return result[0]?.uniqueCount ?? 0;
-  };
-
-  const [easyCount, mediumCount, hardCount, skippedCount, customPlaylists] = await Promise.all([
-    getUniqueCount({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'easy' }),
-    getUniqueCount({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'medium' }),
-    getUniqueCount({ userId: userObjectId, attemptStatus: 'attempted', perceivedDifficultyByUser: 'hard' }),
-    getUniqueCount({ userId: userObjectId, attemptStatus: 'skipped' }),
-    Playlist.find({ userId }).sort('-updatedAt').lean(),
+  const [systemPlaylists, customPlaylists] = await Promise.all([
+    ensureUserSystemPlaylists(userId),
+    Playlist.find({ userId, kind: { $ne: 'system' } }).sort('-updatedAt').lean(),
   ]);
 
-  const smartPlaylists = [
-    {
-      _id: 'easy',
-      id: 'easy',
-      name: 'Easy',
-      title: 'Easy',
-      description: 'Dynamic list of cards you marked as Easy',
-      itemCount: easyCount,
-      completedLoops: 0,
-      totalCardsViewed: 0,
-      color1: '#10B981',
-      color2: '#059669',
-      cardIds: [],
-    },
-    {
-      _id: 'medium',
-      id: 'medium',
-      name: 'Medium',
-      title: 'Medium',
-      description: 'Dynamic list of cards you marked as Medium',
-      itemCount: mediumCount,
-      completedLoops: 0,
-      totalCardsViewed: 0,
-      color1: '#F59E0B',
-      color2: '#D97706',
-      cardIds: [],
-    },
-    {
-      _id: 'hard',
-      id: 'hard',
-      name: 'Hard',
-      title: 'Hard',
-      description: 'Dynamic list of cards you marked as Hard',
-      itemCount: hardCount,
-      completedLoops: 0,
-      totalCardsViewed: 0,
-      color1: '#EF4444',
-      color2: '#DC2626',
-      cardIds: [],
-    },
-    {
-      _id: 'skipped',
-      id: 'skipped',
-      name: 'Skipped',
-      title: 'Skipped',
-      description: 'Dynamic list of cards you skipped',
-      itemCount: skippedCount,
-      completedLoops: 0,
-      totalCardsViewed: 0,
-      color1: '#64748B',
-      color2: '#475569',
-      cardIds: [],
-    },
-  ];
-
-  return [...smartPlaylists, ...customPlaylists];
+  return [...systemPlaylists.map(toClientPlaylist), ...customPlaylists.map(toClientPlaylist)];
 };
 
 export const getPlaylistByIdService = async (playlistId: string, userId: string) => {
-  if (['easy', 'medium', 'hard', 'skipped'].includes(playlistId)) {
+  if (isSystemPlaylistKey(playlistId)) {
+    await ensureUserSystemPlaylists(userId);
     const userObjectId = new mongoose.Types.ObjectId(userId);
     const filterQuery: any = { userId: userObjectId };
     if (playlistId === 'skipped') {
@@ -182,11 +236,19 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
 
     const cardIds = uniqueCards.map((c: any) => c._id.toString());
 
-    const name = playlistId.charAt(0).toUpperCase() + playlistId.slice(1);
+    const systemPlaylist = await Playlist.findOne({
+      userId: userObjectId,
+      kind: 'system',
+      systemKey: playlistId,
+    }).lean();
+    const name = systemPlaylist?.name || playlistId.charAt(0).toUpperCase() + playlistId.slice(1);
 
     const playlist = {
       _id: playlistId,
       id: playlistId,
+      mongoId: systemPlaylist?._id?.toString(),
+      kind: 'system',
+      systemKey: playlistId,
       name,
       title: name,
       description: `Dynamic list of cards you marked as ${name}`,
@@ -219,6 +281,15 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
     cardIds,
     items: cardIds,
   };
+};
+
+export const getClientPlaylistsForSyncService = async (userId: string): Promise<any[]> => {
+  const [systemPlaylists, customPlaylists] = await Promise.all([
+    ensureUserSystemPlaylists(userId),
+    Playlist.find({ userId, kind: { $ne: 'system' } }).lean(),
+  ]);
+
+  return [...systemPlaylists.map(toClientPlaylist), ...customPlaylists.map(toClientPlaylist)];
 };
 
 export const deletePlaylistService = async (playlistId: string, userId: string): Promise<boolean> => {

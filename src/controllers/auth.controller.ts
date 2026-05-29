@@ -5,6 +5,7 @@ import { verifyGoogleTokenAndLogin } from '../services/auth.service';
 import { generateToken } from '../utils/jwt';
 import { successResponse } from '../utils/responseHandler';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { ensureUserSystemPlaylists, logUserPlaylistCatalogSummary } from '../services/playlist.service';
 
 export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
   console.log("Body received:", req.body);
@@ -14,6 +15,8 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
 
     // Service handles the "Create if new / Login if existing" logic
     const user = await verifyGoogleTokenAndLogin(idToken);
+    await ensureUserSystemPlaylists(user._id.toString());
+    await logUserPlaylistCatalogSummary(user._id.toString(), user.email);
 
     if (deviceId) {
       user.lastDeviceId = deviceId;
@@ -49,6 +52,10 @@ export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
       }
     });
     console.log(`[Auth] Startup device sync completed for user ${req.user.email}: Device ID ${deviceId}`);
+  }
+
+  if (req.user) {
+    await ensureUserSystemPlaylists(req.user._id.toString());
   }
 
   return successResponse(res, 200, 'User profile retrieved successfully', { user: req.user });

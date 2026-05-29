@@ -4,6 +4,7 @@ import Progress from '../models/progress.model';
 import RevisionCard from '../models/revisionCard.model';
 import ApiError from '../utils/ApiError';
 import httpStatus from 'http-status';
+import { ensureUserSystemPlaylists } from './playlist.service';
 
 export const updateUserQuestionProgress = async (
   userId: string,
@@ -30,6 +31,7 @@ export const updateUserQuestionProgress = async (
       { $set: { difficultyState: null, stateChangedAt: new Date() } },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     ).catch(console.error);
+    await ensureUserSystemPlaylists(userId);
     return null;
   }
 
@@ -51,6 +53,7 @@ export const updateUserQuestionProgress = async (
         { $set: { difficultyState: null, stateChangedAt: new Date() } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       ).catch(console.error);
+      await ensureUserSystemPlaylists(userId);
       return null;
     }
   }
@@ -84,5 +87,6 @@ export const updateUserQuestionProgress = async (
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).catch(console.error);
 
+  await ensureUserSystemPlaylists(userId);
   return result;
 };

@@ -7,6 +7,8 @@ export interface IPlaylist extends Document {
   description?: string;
   color1?: string;
   color2?: string;
+  kind: 'system' | 'custom';
+  systemKey?: 'easy' | 'medium' | 'hard' | 'skipped';
   itemCount: number;
   completedLoops: number;
   lastCompletedAt?: Date;
@@ -32,6 +34,8 @@ const PlaylistSchema = new Schema<IPlaylist>(
     description: { type: String },
     color1: { type: String },
     color2: { type: String },
+    kind: { type: String, enum: ['system', 'custom'], default: 'custom', index: true },
+    systemKey: { type: String, enum: ['easy', 'medium', 'hard', 'skipped'], sparse: true },
     itemCount: { type: Number, default: 0 },
     completedLoops: { type: Number, default: 0 },
     lastCompletedAt: { type: Date },
@@ -49,6 +53,11 @@ const PlaylistSchema = new Schema<IPlaylist>(
   {
     timestamps: true,
   }
+);
+
+PlaylistSchema.index(
+  { userId: 1, systemKey: 1 },
+  { unique: true, partialFilterExpression: { kind: 'system', systemKey: { $exists: true } } }
 );
 
 // Pre-save hook to keep name and title in sync
