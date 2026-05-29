@@ -91,6 +91,14 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       DeletedEntity.find(deletedEntitiesQuery).lean(),
     ]);
 
+    // Print beautifully structured custom playlist sync fetch log
+    console.log(`[Focus Area Sync] Sync Fetch User: ${userId} | Revision: ${sinceRevision} | Custom Playlists Count: ${playlists.length}`);
+    playlists.forEach((pl: any) => {
+      if (pl.kind !== 'system') {
+        console.log(`  -> Custom Playlist returned: "${pl.name}" | ID: ${pl._id} | Cards: ${JSON.stringify(pl.cardIds || pl.orderedCardIds || [])}`);
+      }
+    });
+
     // Cryptographic Checksum Fingerprint calculation of all current user-owned ObjectIds
     const [activePlaylists, activeFolders] = await Promise.all([
       Playlist.find({ userId, kind: { $ne: 'system' } }).select('_id').sort({ _id: 1 }).lean(),

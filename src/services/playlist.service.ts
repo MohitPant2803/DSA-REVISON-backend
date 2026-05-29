@@ -289,6 +289,11 @@ export const getClientPlaylistsForSyncService = async (userId: string): Promise<
     Playlist.find({ userId, kind: { $ne: 'system' } }).lean(),
   ]);
 
+  console.log(`[Focus Area Sync] User: ${userId} | Custom Playlists Count: ${customPlaylists.length}`);
+  customPlaylists.forEach((pl: any) => {
+    console.log(`  -> Custom Playlist: "${pl.name}" | ID: ${pl._id} | Cards: ${JSON.stringify(pl.cardIds || pl.orderedCardIds || [])}`);
+  });
+
   return [...systemPlaylists.map(toClientPlaylist), ...customPlaylists.map(toClientPlaylist)];
 };
 
