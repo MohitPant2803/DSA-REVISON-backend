@@ -48,20 +48,42 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
 
     const sinceDate = req.query.since ? new Date(req.query.since as string) : new Date(0);
     
-    // Fetch all entities that have been modified since the client's last revision
-    // For global entities (RevisionCard) and public folders, we fallback to updatedAt
+    // Fetch all entities that have been modified since the client's last revision.
+    // When sinceRevision is 0 (full resync), we fetch all user-owned entities regardless of their revision number
+    // to ensure offline/REST-created entities aren't missed or wiped during re-sync.
+    const folderQuery = sinceRevision === 0
+      ? {
+          $or: [
+            { createdBy: userId },
+            { visibility: 'public', updatedAt: { $gt: sinceDate } }
+          ]
+        }
+      : {
+          $or: [
+            { createdBy: userId, revision: { $gt: sinceRevision } },
+            { visibility: 'public', updatedAt: { $gt: sinceDate } }
+          ]
+        };
+
+    const playlistQuery = sinceRevision === 0
+      ? { userId }
+      : { userId, revision: { $gt: sinceRevision } };
+
+    const progressQuery = sinceRevision === 0
+      ? { userId }
+      : { userId, revision: { $gt: sinceRevision } };
+
+    const deletedEntitiesQuery = sinceRevision === 0
+      ? { userId }
+      : { userId, revision: { $gt: sinceRevision } };
+
     const [cards, folders, playlists, questionProgress, progress, deletedEntities] = await Promise.all([
       RevisionCard.find({ updatedAt: { $gt: sinceDate } }).lean(),
-      Folder.find({
-        $or: [
-          { createdBy: userId, revision: { $gt: sinceRevision } },
-          { visibility: 'public', updatedAt: { $gt: sinceDate } }
-        ]
-      }).lean(),
-      Playlist.find({ userId, revision: { $gt: sinceRevision } }).lean(),
+      Folder.find(folderQuery).lean(),
+      Playlist.find(playlistQuery).lean(),
       UserQuestionProgress.find({ userId, updatedAt: { $gt: sinceDate } }).lean(),
-      Progress.find({ userId, revision: { $gt: sinceRevision } }).lean(),
-      DeletedEntity.find({ userId, revision: { $gt: sinceRevision } }).lean(),
+      Progress.find(progressQuery).lean(),
+      DeletedEntity.find(deletedEntitiesQuery).lean(),
     ]);
 
     // Cryptographic Checksum Fingerprint calculation of all current user-owned ObjectIds
