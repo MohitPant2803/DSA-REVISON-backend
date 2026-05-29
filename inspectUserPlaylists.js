@@ -9,8 +9,8 @@ async function run() {
   
   const db = mongoose.connection.db;
 
-  console.log('\nFinding user "mohit.pant1828@gmail.com"...');
-  const user = await db.collection('users').findOne({ email: 'mohit.pant1828@gmail.com' });
+  console.log('\nFinding user "mohi13245@gmail.com"...');
+  const user = await db.collection('users').findOne({ email: 'mohi13245@gmail.com' });
   
   if (!user) {
     console.error('❌ User not found!');
