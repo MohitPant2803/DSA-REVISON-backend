@@ -152,12 +152,8 @@ export const createPlaylistService = async (userId: string, data: any): Promise<
 };
 
 export const getUserPlaylistsService = async (userId: string): Promise<any[]> => {
-  const [systemPlaylists, customPlaylists] = await Promise.all([
-    ensureUserSystemPlaylists(userId),
-    Playlist.find({ userId, kind: { $ne: 'system' } }).sort('-updatedAt').lean(),
-  ]);
-
-  return [...systemPlaylists.map(toClientPlaylist), ...customPlaylists.map(toClientPlaylist)];
+  const customPlaylists = await Playlist.find({ userId, kind: { $ne: 'system' } }).sort('-updatedAt').lean();
+  return customPlaylists.map(toClientPlaylist);
 };
 
 export const getPlaylistByIdService = async (playlistId: string, userId: string) => {
@@ -284,17 +280,14 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
 };
 
 export const getClientPlaylistsForSyncService = async (userId: string): Promise<any[]> => {
-  const [systemPlaylists, customPlaylists] = await Promise.all([
-    ensureUserSystemPlaylists(userId),
-    Playlist.find({ userId, kind: { $ne: 'system' } }).lean(),
-  ]);
+  const customPlaylists = await Playlist.find({ userId, kind: { $ne: 'system' } }).lean();
 
   console.log(`[Focus Area Sync] User: ${userId} | Custom Playlists Count: ${customPlaylists.length}`);
   customPlaylists.forEach((pl: any) => {
     console.log(`  -> Custom Playlist: "${pl.name}" | ID: ${pl._id} | Cards: ${JSON.stringify(pl.cardIds || pl.orderedCardIds || [])}`);
   });
 
-  return [...systemPlaylists.map(toClientPlaylist), ...customPlaylists.map(toClientPlaylist)];
+  return customPlaylists.map(toClientPlaylist);
 };
 
 export const deletePlaylistService = async (playlistId: string, userId: string): Promise<boolean> => {

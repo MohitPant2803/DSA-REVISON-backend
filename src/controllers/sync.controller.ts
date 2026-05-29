@@ -275,7 +275,6 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
                     },
                     { upsert: true, new: true, session }
                   );
-                  await ensureUserSystemPlaylists(userId);
                 } else {
                   console.log(`[CRDT-lite Lock] Discarding classification for card: ${cardId}. Out-of-order sequence.`);
                 }
