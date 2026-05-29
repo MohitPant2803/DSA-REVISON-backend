@@ -522,7 +522,7 @@ export const syncAnalyticsService = async (userId: string, swipes: number, scrol
   const user = await User.findByIdAndUpdate(
     userId,
     {
-      $inc: {
+      $max: {
         totalSwipes: swipes,
         totalScrolls: scrolls,
       },
