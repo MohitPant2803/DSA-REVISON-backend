@@ -68,9 +68,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
           ]
         };
 
-    const playlistQuery = sinceRevision === 0
-      ? null
-      : { userId, kind: { $ne: 'system' }, revision: { $gt: sinceRevision } };
+    const playlistQuery = null;
 
     const progressQuery = sinceRevision === 0
       ? { userId }
