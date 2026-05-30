@@ -30,6 +30,7 @@ import {
   updateFolderById 
 } from '../services/folderService';
 import { updateUserPreferences, updateSessionIndex } from '../services/reelsFeedService';
+import SeniorQuote from '../models/seniorQuote.model';
 
 const CURRENT_DB_VERSION = 'striver-sde-sheet-v4';
 
@@ -79,7 +80,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       ? { userId }
       : { userId, revision: { $gt: sinceRevision } };
 
-    const [cards, folders, playlists, questionProgress, progress, deletedEntities] = await Promise.all([
+    const [cards, folders, playlists, questionProgress, progress, deletedEntities, seniorQuotes] = await Promise.all([
       RevisionCard.find({ updatedAt: { $gt: sinceDate } }).lean(),
       Folder.find(folderQuery).lean(),
       playlistQuery
@@ -88,10 +89,11 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       UserQuestionProgress.find({ userId, updatedAt: { $gt: sinceDate } }).lean(),
       Progress.find(progressQuery).lean(),
       DeletedEntity.find(deletedEntitiesQuery).lean(),
+      SeniorQuote.find({ updatedAt: { $gt: sinceDate } }).lean(),
     ]);
 
     // Print beautifully structured custom playlist sync fetch log
-    console.log(`[Focus Area Sync] Sync Fetch User: ${userId} | Revision: ${sinceRevision} | Custom Playlists Count: ${playlists.length}`);
+    console.log(`[Focus Area Sync] Sync Fetch User: ${userId} | Revision: ${sinceRevision} | Custom Playlists Count: ${playlists.length} | Senior Quotes: ${seniorQuotes.length}`);
     playlists.forEach((pl: any) => {
       if (pl.kind !== 'system') {
         console.log(`  -> Custom Playlist returned: "${pl.name}" | ID: ${pl._id} | Cards: ${JSON.stringify(pl.cardIds || pl.orderedCardIds || [])}`);
@@ -126,7 +128,8 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
         playlists,
         questionProgress,
         progress,
-        deletedEntities
+        deletedEntities,
+        seniorQuotes
       },
     });
   }
@@ -135,13 +138,14 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
   const sinceStr = req.query.since as string;
   const since = sinceStr ? new Date(sinceStr) : new Date(0);
 
-  const [cards, folders, playlists, questionProgress, progress, deletedEntities] = await Promise.all([
+  const [cards, folders, playlists, questionProgress, progress, deletedEntities, seniorQuotes] = await Promise.all([
     RevisionCard.find({ updatedAt: { $gt: since } }).lean(),
     Folder.find({ updatedAt: { $gt: since } }).lean(),
     getClientPlaylistsForSyncService(userId.toString()),
     UserQuestionProgress.find({ userId, updatedAt: { $gt: since } }).lean(),
     Progress.find({ userId, updatedAt: { $gt: since } }).lean(),
     DeletedEntity.find({ userId, deletedAt: { $gt: since } }).lean(),
+    SeniorQuote.find({ updatedAt: { $gt: since } }).lean(),
   ]);
 
   return successResponse(res, 200, 'Sync delta fetched successfully', {
@@ -155,6 +159,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       questionProgress,
       progress,
       deletedEntities,
+      seniorQuotes,
     },
   });
 });
