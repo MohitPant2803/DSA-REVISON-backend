@@ -29,6 +29,7 @@ import {
   deleteFolderById, 
   updateFolderById 
 } from '../services/folderService';
+import { updateUserPreferences } from '../services/reelsFeedService';
 
 const CURRENT_DB_VERSION = 'striver-sde-sheet-v4';
 
@@ -278,6 +279,14 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
                 } else {
                   console.log(`[CRDT-lite Lock] Discarding classification for card: ${cardId}. Out-of-order sequence.`);
                 }
+              }
+              break;
+            }
+
+            case 'UPDATE_REEL_PREFERENCES': {
+              const { selectedRootFolderIds } = payload;
+              if (selectedRootFolderIds && selectedRootFolderIds.length > 0) {
+                await updateUserPreferences(userId.toString(), selectedRootFolderIds);
               }
               break;
             }
