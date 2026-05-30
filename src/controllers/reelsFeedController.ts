@@ -31,20 +31,9 @@ export const getSessionSliceHandler = asyncHandler(async (req: AuthRequest, res:
   res.status(httpStatus.OK).json(slice);
 });
 
-// 4. Update session scroll index with monotonic sequence guards
+// 4. Update session scroll index (Purged: Memory-Only Architecture)
 export const updateSessionIndexHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { currentIndex, clientTimestamp } = req.body;
-  if (currentIndex === undefined) {
-    res.status(httpStatus.BAD_REQUEST).json({ message: 'currentIndex is required' });
-    return;
-  }
-
-  const session = await reelsFeedService.updateSessionIndex(
-    req.user!._id.toString(),
-    currentIndex,
-    clientTimestamp || Date.now()
-  );
-  res.status(httpStatus.OK).json(session);
+  res.status(httpStatus.OK).json({ success: true, message: 'Session index is now memory-only. Persistence bypassed.' });
 });
 
 // 5. Explicitly invalidate/regenerate clean deterministic queue

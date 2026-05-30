@@ -29,7 +29,7 @@ import {
   deleteFolderById, 
   updateFolderById 
 } from '../services/folderService';
-import { updateUserPreferences, updateSessionIndex } from '../services/reelsFeedService';
+import { updateUserPreferences } from '../services/reelsFeedService';
 import SeniorQuote from '../models/seniorQuote.model';
 
 const CURRENT_DB_VERSION = 'striver-sde-sheet-v4';
@@ -526,14 +526,6 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
                   { $set: { revision: nextRev, deletedAt: new Date() } },
                   { upsert: true, new: true, session }
                 );
-              }
-              break;
-            }
-
-            case 'UPDATE_SESSION_INDEX': {
-              const { currentIndex, clientTimestamp } = payload;
-              if (currentIndex !== undefined) {
-                await updateSessionIndex(userId, currentIndex, clientTimestamp || Date.now());
               }
               break;
             }
