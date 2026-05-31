@@ -18,17 +18,9 @@ async function atomicSyncFocusArea(
   state: 'easy' | 'medium' | 'hard' | 'skipped' | null
 ): Promise<void> {
   try {
-    // Step 1: Pull from all 4 arrays
-    await User.findByIdAndUpdate(userObjectId, {
-      $pull: {
-        focusEasyCardIds: questionObjectId,
-        focusMediumCardIds: questionObjectId,
-        focusHardCardIds: questionObjectId,
-        focusSkippedCardIds: questionObjectId,
-      },
-    });
+    const pullFields = ['focusEasyCardIds', 'focusMediumCardIds', 'focusHardCardIds', 'focusSkippedCardIds'];
+    let updateQuery: any = {};
 
-    // Step 2: Push into the correct array (skip if resetting to null)
     if (state) {
       const fieldMap: Record<string, string> = {
         easy: 'focusEasyCardIds',
@@ -36,13 +28,31 @@ async function atomicSyncFocusArea(
         hard: 'focusHardCardIds',
         skipped: 'focusSkippedCardIds',
       };
-      const listField = fieldMap[state];
-      if (listField) {
-        await User.findByIdAndUpdate(userObjectId, {
-          $addToSet: { [listField]: questionObjectId },
-        });
-      }
+      const pushField = fieldMap[state];
+      const pullList = pullFields.filter(f => f !== pushField);
+
+      updateQuery = {
+        $pull: {
+          [pullList[0]]: questionObjectId,
+          [pullList[1]]: questionObjectId,
+          [pullList[2]]: questionObjectId,
+        },
+        $addToSet: {
+          [pushField]: questionObjectId
+        }
+      };
+    } else {
+      updateQuery = {
+        $pull: {
+          focusEasyCardIds: questionObjectId,
+          focusMediumCardIds: questionObjectId,
+          focusHardCardIds: questionObjectId,
+          focusSkippedCardIds: questionObjectId,
+        }
+      };
     }
+
+    await User.findByIdAndUpdate(userObjectId, updateQuery);
     console.log(`[Focus Area Sync] User ${userObjectId} | Card ${questionObjectId} -> ${state ?? 'removed'}`);
   } catch (err: any) {
     console.error(`[Focus Area Sync Error] Failed to sync focus area: ${err.message}`);
@@ -52,7 +62,8 @@ async function atomicSyncFocusArea(
 export const updateUserQuestionProgress = async (
   userId: string,
   questionId: string,
-  state: 'easy' | 'medium' | 'hard' | 'skipped' | null
+  state: 'easy' | 'medium' | 'hard' | 'skipped' | null,
+  skipPlaylistUpdate = false
 ) => {
   if (!mongoose.Types.ObjectId.isValid(questionId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid question ID');
@@ -74,7 +85,9 @@ export const updateUserQuestionProgress = async (
       { $set: { difficultyState: null, stateChangedAt: new Date() } },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     ).catch(console.error);
-    await ensureUserSystemPlaylists(userId);
+    if (!skipPlaylistUpdate) {
+      await ensureUserSystemPlaylists(userId);
+    }
     await atomicSyncFocusArea(userObjectId, questionObjectId, null);
     return null;
   }
@@ -97,7 +110,9 @@ export const updateUserQuestionProgress = async (
         { $set: { difficultyState: null, stateChangedAt: new Date() } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       ).catch(console.error);
-      await ensureUserSystemPlaylists(userId);
+      if (!skipPlaylistUpdate) {
+        await ensureUserSystemPlaylists(userId);
+      }
       await atomicSyncFocusArea(userObjectId, questionObjectId, null);
       return null;
     }
@@ -132,7 +147,9 @@ export const updateUserQuestionProgress = async (
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).catch(console.error);
 
-  await ensureUserSystemPlaylists(userId);
+  if (!skipPlaylistUpdate) {
+    await ensureUserSystemPlaylists(userId);
+  }
   await atomicSyncFocusArea(userObjectId, questionObjectId, state);
   return result;
 };

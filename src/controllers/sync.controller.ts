@@ -269,7 +269,7 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
 
                 const doc = await Progress.findOne({ userId, revisionCardId: cardId }).session(session);
                 if (!doc || clientSeq > (doc.difficultyLogicalSequence || 0)) {
-                  await updateUserQuestionProgress(userId, cardId, state);
+                  await updateUserQuestionProgress(userId, cardId, state, true);
                   await Progress.findOneAndUpdate(
                     { userId, revisionCardId: cardId },
                     { 
@@ -567,6 +567,14 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
   }
 
   console.log(`[BACKEND SYNC BATCH] Completed chunk processing. Processed: ${processedIds.length} mutations. Failed: ${failedIds.length} mutations.`);
+
+  // Re-run system playlist generation exactly once at the end of the entire batch action replay
+  // instead of redundantly N times inside CLASSIFY_CARD loops (huge database speedup!)
+  try {
+    await ensureUserSystemPlaylists(userId);
+  } catch (err: any) {
+    console.error(`[Batch Sync System Playlist Sync Error] Failed: ${err.message}`);
+  }
 
   return successResponse(res, 200, 'Batch actions processed successfully', {
     processedIds,
