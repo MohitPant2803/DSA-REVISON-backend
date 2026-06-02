@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { createDomain, createCategory, createPlacard, updatePlacard, deletePlacard } from '../controllers/admin.controller';
 import { getUsersHandler, updateUserRoleHandler } from '../controllers/userAdmin.controller';
 import { getAnalytics } from '../controllers/analytics.controller';
+import { sendPushNotificationHandler } from '../controllers/pushNotification.controller';
 import { protect, authorize } from '../middleware/authMiddleware';
 
 const router = Router();
@@ -11,6 +12,8 @@ router.get('/users', protect, authorize('superadmin'), getUsersHandler);
 router.patch('/users/:id/role', protect, authorize('superadmin'), updateUserRoleHandler);
 
 router.use(protect, authorize('admin', 'superadmin'));
+
+router.post('/send-push', sendPushNotificationHandler);
 
 router.post('/domain/create', createDomain);
 router.post('/category/create', createCategory);

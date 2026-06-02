@@ -18,6 +18,7 @@ export interface IUser extends Document {
   currentRevision: number;
   lastDeviceId?: string;
   lastClockEpoch?: string;
+  expoPushToken?: string;
   focusEasyCardIds?: mongoose.Types.ObjectId[];
   focusMediumCardIds?: mongoose.Types.ObjectId[];
   focusHardCardIds?: mongoose.Types.ObjectId[];
@@ -52,6 +53,7 @@ const UserSchema = new Schema<IUser>(
     currentRevision: { type: Number, default: 0, required: true },
     lastDeviceId: { type: String },
     lastClockEpoch: { type: String },
+    expoPushToken: { type: String, default: null },
     focusEasyCardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
     focusMediumCardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
     focusHardCardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],

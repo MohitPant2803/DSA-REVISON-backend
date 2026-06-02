@@ -12,6 +12,9 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   SUPERADMIN_EMAIL: z.string().email().optional(),
   ALLOWED_ORIGINS: z.string().default('*'), // Comma separated for multiple frontends
+  LATEST_APP_VERSION: z.string().default('1.0.2'),
+  APP_UPDATE_URL: z.string().url().default('https://github.com/MohitPant2803/DSA-REVISON-frontend/releases/download/ReeWise3/app-arm64-v8a-release.apk'),
+  APP_SHARE_MESSAGE: z.string().default("Here's the link of the cool app you were asking about 😉 \n\n{updateUrl}"),
 });
 
 const _env = envSchema.safeParse(process.env);

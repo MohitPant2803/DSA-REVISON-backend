@@ -60,3 +60,21 @@ export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
 
   return successResponse(res, 200, 'User profile retrieved successfully', { user: req.user });
 });
+
+export const updatePushToken = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { pushToken } = req.body;
+  if (!pushToken) {
+    return res.status(400).json({ success: false, message: 'Push token is required' });
+  }
+
+  if (req.user) {
+    const User = require('../models/user.model').default;
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: { expoPushToken: pushToken }
+    });
+    console.log(`[Push Notification] Registered push token for ${req.user.email}`);
+    return successResponse(res, 200, 'Push token registered successfully');
+  }
+
+  return res.status(401).json({ success: false, message: 'Unauthorized' });
+});

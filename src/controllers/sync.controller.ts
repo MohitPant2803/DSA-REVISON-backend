@@ -2,6 +2,7 @@ import { Response } from 'express';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import { asyncHandler } from '../utils/asyncHandler';
+import { env } from '../config/env';
 import { successResponse, errorResponse } from '../utils/responseHandler';
 import { getNextUserRevision } from '../utils/revision.utility';
 import DeletedEntity from '../models/deletedEntity.model';
@@ -131,6 +132,11 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
         deletedEntities,
         seniorQuotes
       },
+      appConfig: {
+        latestVersion: env.LATEST_APP_VERSION,
+        updateUrl: env.APP_UPDATE_URL,
+        shareMessage: env.APP_SHARE_MESSAGE
+      }
     });
   }
 
@@ -161,6 +167,11 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       deletedEntities,
       seniorQuotes,
     },
+    appConfig: {
+      latestVersion: env.LATEST_APP_VERSION,
+      updateUrl: env.APP_UPDATE_URL,
+      shareMessage: env.APP_SHARE_MESSAGE
+    }
   });
 });
 
