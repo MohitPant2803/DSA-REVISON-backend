@@ -1,4 +1,11 @@
 import mongoose from 'mongoose';
+import crypto from 'crypto';
+
+const generateDeterministicObjectId = (input: string): mongoose.Types.ObjectId => {
+  const hash = crypto.createHash('md5').update(input).digest('hex');
+  return new mongoose.Types.ObjectId(hash.substring(0, 24));
+};
+
 import { connectDB } from '../config/db';
 import { logger } from '../utils/logger';
 import User from '../models/user.model';
@@ -3145,7 +3152,9 @@ const runDSAKnowledgeSeeder = async () => {
     logger.info(`✅ Cleared ${existingFolderIds.length} existing folders and associated card collections.`);
 
     // c. Seed Parent Sheet Folders in nested DSA -> Sheets structure
+    const dsaFolderId = generateDeterministicObjectId('folder-DSA');
     const dsaFolder = await Folder.create({
+      _id: dsaFolderId,
       title: 'DSA',
       description: 'Master Data Structures and Algorithms conceptually.',
       icon: 'code',
@@ -3157,7 +3166,9 @@ const runDSAKnowledgeSeeder = async () => {
       parentFolderId: null,
     });
 
+    const sheetsFolderId = generateDeterministicObjectId('folder-Sheets|DSA');
     const sheetsFolder = await Folder.create({
+      _id: sheetsFolderId,
       title: 'Sheets',
       description: 'Top curated sheets for placement and interview preparation.',
       icon: 'layers',
@@ -3172,7 +3183,9 @@ const runDSAKnowledgeSeeder = async () => {
     const sheetTitleToIdMap: Record<string, string> = {};
     for (let i = 0; i < SHEET_CONFIGS.length; i++) {
       const config = SHEET_CONFIGS[i];
+      const sheetId = generateDeterministicObjectId(`folder-${config.title}|Sheets|DSA`);
       const folder = await Folder.create({
+        _id: sheetId,
         title: config.title,
         description: config.description,
         icon: config.icon,
@@ -3241,7 +3254,9 @@ const runDSAKnowledgeSeeder = async () => {
     ];
 
     for (const f of OTHER_ROOT_FOLDERS) {
+      const folderId = generateDeterministicObjectId(`folder-${f.title}`);
       await Folder.create({
+        _id: folderId,
         title: f.title,
         description: f.description,
         icon: f.icon,
@@ -3343,8 +3358,10 @@ const runDSAKnowledgeSeeder = async () => {
         else if (st.includes('search')) { subIcon = 'code'; subColor = '#3B82F6'; }
         else if (st.includes('string')) { subIcon = 'book'; subColor = '#06B6D4'; }
 
+        const subfolderId = generateDeterministicObjectId(`folder-${subTitle}|${sheetTitle}`);
         // Create the child Subfolder
         const subfolder = await Folder.create({
+          _id: subfolderId,
           title: subTitle,
           description: `Master beautiful ${subTitle} question insights curated for ${sheetTitle}.`,
           icon: subIcon,
@@ -3383,8 +3400,11 @@ const runDSAKnowledgeSeeder = async () => {
               totalSlides: compiledSlides.length,
             }));
 
+            const generatedCardId = generateDeterministicObjectId(`card-${q.title}|${q.topic}`);
+
             // Create Revision Card
             const newCard = await RevisionCard.create({
+              _id: generatedCardId,
               title: q.title,
               topic: q.topic,
               explanation: q.explanation,
