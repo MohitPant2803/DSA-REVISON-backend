@@ -3151,13 +3151,25 @@ const runDSAKnowledgeSeeder = async () => {
     }
     const adminId = admin._id;
 
-    // b. Clear out existing folders and cards created by the System Admin to prevent duplicates
+    // b. Clear out existing folders and cards created by the System Admin or legacy ones to prevent duplicates
     logger.info('🧹 Scrubbing existing seeded system folders and cards for fresh start...');
     const existingFolders = await Folder.find({ createdBy: adminId });
     const existingFolderIds = existingFolders.map(f => f._id);
     
-    await RevisionCard.deleteMany({ createdBy: adminId });
-    await Folder.deleteMany({ createdBy: adminId });
+    await RevisionCard.deleteMany({
+      $or: [
+        { createdBy: adminId },
+        { createdBy: { $exists: false } },
+        { createdBy: null }
+      ]
+    });
+    await Folder.deleteMany({
+      $or: [
+        { createdBy: adminId },
+        { createdBy: { $exists: false } },
+        { createdBy: null }
+      ]
+    });
     logger.info(`✅ Cleared ${existingFolderIds.length} existing folders and associated card collections.`);
 
     // c. Seed Parent Sheet Folders in nested DSA -> Sheets structure
