@@ -1,9 +1,18 @@
 import mongoose from 'mongoose';
 import crypto from 'crypto';
+import { STATIC_IDS } from './staticIds';
+
+const idMap = new Map<string, string>();
 
 const generateDeterministicObjectId = (input: string): mongoose.Types.ObjectId => {
-  const hash = crypto.createHash('md5').update(input).digest('hex');
-  return new mongoose.Types.ObjectId(hash.substring(0, 24));
+  const idStr = STATIC_IDS[input];
+  if (!idStr) {
+    const hash = crypto.createHash('md5').update(input).digest('hex');
+    const fallbackId = hash.substring(0, 24);
+    logger.warn(`⚠️ Warning: ID not found in STATIC_IDS for key: "${input}". Generated fallback: ${fallbackId}`);
+    return new mongoose.Types.ObjectId(fallbackId);
+  }
+  return new mongoose.Types.ObjectId(idStr);
 };
 
 import { connectDB } from '../config/db';
@@ -3440,6 +3449,22 @@ const runDSAKnowledgeSeeder = async () => {
     logger.info(`   - Total Child Topic Subfolders Created: ${totalSubfoldersSeeded}`);
     logger.info(`   - Total Immersive Question Cards Seeded: ${totalCardsSeeded}`);
     logger.info('======================================================\n');
+
+    if (process.env.GENERATE_STATIC_IDS === 'true') {
+      const fs = require('fs');
+      const path = require('path');
+      const staticIdsObj: Record<string, string> = {};
+      const sortedKeys = Array.from(idMap.keys()).sort();
+      for (const k of sortedKeys) {
+        staticIdsObj[k] = idMap.get(k)!;
+      }
+      const fileContent = `// This file is auto-generated. Do not edit manually.
+export const STATIC_IDS: Record<string, string> = ${JSON.stringify(staticIdsObj, null, 2)};
+`;
+      fs.writeFileSync(path.join(__dirname, 'staticIds.ts'), fileContent);
+      logger.info('💾 Generated src/seed/staticIds.ts successfully!');
+    }
+
     process.exit(0);
   } catch (error: any) {
     logger.error('❌ Database Seeding Failed with Error:', error);
