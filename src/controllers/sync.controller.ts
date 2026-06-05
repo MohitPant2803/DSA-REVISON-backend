@@ -14,7 +14,7 @@ import Progress from '../models/progress.model';
 import ProcessedMutation from '../models/processedMutation.model';
 import { AuthRequest } from './playlist.controller';
 import { updateUserQuestionProgress } from '../services/userQuestionProgress.service';
-import { updateProgressService, reorderLikesService } from '../services/progress.service';
+import { updateProgressService, reorderLikesService, registerLoopService, updateResumeStateService } from '../services/progress.service';
 import { 
   addItemToPlaylistService, 
   removeItemFromPlaylistService, 
@@ -329,6 +329,22 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
                 } else {
                   console.log(`[CRDT-lite Lock] Discarding favorite toggle for card: ${cardId}. Out-of-order sequence.`);
                 }
+              }
+              break;
+            }
+
+            case 'REGISTER_LOOP': {
+              const { type, id, cardsViewed } = payload;
+              if (type && id) {
+                await registerLoopService(userId.toString(), type, id, cardsViewed);
+              }
+              break;
+            }
+
+            case 'UPDATE_RESUME_STATE': {
+              const { type, id, resumeData } = payload;
+              if (type && id && resumeData) {
+                await updateResumeStateService(userId.toString(), type, id, resumeData);
               }
               break;
             }
