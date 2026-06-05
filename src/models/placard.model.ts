@@ -1,3 +1,4 @@
+// LEGACY_DO_NOT_USE
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IWalkthroughStep {

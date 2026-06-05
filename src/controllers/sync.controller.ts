@@ -31,7 +31,7 @@ import {
   updateFolderById 
 } from '../services/folderService';
 import { updateUserPreferences } from '../services/reelsFeedService';
-import SeniorQuote from '../models/seniorQuote.model';
+import { STATIC_SENIOR_QUOTES } from '../config/quotes';
 
 const CURRENT_DB_VERSION = 'striver-sde-sheet-v4';
 
@@ -90,7 +90,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       UserQuestionProgress.find({ userId, updatedAt: { $gt: sinceDate } }).lean(),
       Progress.find(progressQuery).lean(),
       DeletedEntity.find(deletedEntitiesQuery).lean(),
-      SeniorQuote.find({ updatedAt: { $gt: sinceDate } }).lean(),
+      Promise.resolve(STATIC_SENIOR_QUOTES.filter(q => new Date(q.updatedAt) > sinceDate)),
     ]);
 
     // Print beautifully structured custom playlist sync fetch log
@@ -151,7 +151,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
     UserQuestionProgress.find({ userId, updatedAt: { $gt: since } }).lean(),
     Progress.find({ userId, updatedAt: { $gt: since } }).lean(),
     DeletedEntity.find({ userId, deletedAt: { $gt: since } }).lean(),
-    SeniorQuote.find({ updatedAt: { $gt: since } }).lean(),
+    Promise.resolve(STATIC_SENIOR_QUOTES.filter(q => new Date(q.updatedAt) > since)),
   ]);
 
   return successResponse(res, 200, 'Sync delta fetched successfully', {

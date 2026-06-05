@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { createDomain, createCategory, createPlacard, updatePlacard, deletePlacard } from '../controllers/admin.controller';
 import { getUsersHandler, updateUserRoleHandler } from '../controllers/userAdmin.controller';
 import { getAnalytics } from '../controllers/analytics.controller';
 import { sendPushNotificationHandler } from '../controllers/pushNotification.controller';
@@ -14,12 +13,5 @@ router.patch('/users/:id/role', protect, authorize('superadmin'), updateUserRole
 router.use(protect, authorize('admin', 'superadmin'));
 
 router.post('/send-push', sendPushNotificationHandler);
-
-router.post('/domain/create', createDomain);
-router.post('/category/create', createCategory);
-
-router.post('/placard/create', createPlacard);
-router.put('/placard/:id', updatePlacard);
-router.delete('/placard/:id', deletePlacard);
 
 export default router;
