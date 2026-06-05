@@ -45,8 +45,8 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
     const currentRevision = (req.user as any).currentRevision || 0;
 
     // Window Compaction protection: if client is too far behind, force a clean full resync
-    if (sinceRevision > 0 && currentRevision - sinceRevision > 5000) {
-      return successResponse(res, 200, 'Full resync required due to compaction window limit', {
+    if (sinceRevision > 0 && (currentRevision - sinceRevision > 5000 || sinceRevision > currentRevision)) {
+      return successResponse(res, 200, 'Full resync required due to compaction window limit or database reset', {
         requiresFullResync: true,
         currentRevision,
       });

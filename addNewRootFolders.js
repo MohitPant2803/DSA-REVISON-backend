@@ -33,7 +33,7 @@ const FOLDERS_TO_ADD = [
     order: 4,
   },
   {
-    title: 'Brain Stellar',
+    title: 'Quant',
     description: 'Handpicked conceptual brain teasers, logical puzzles, and quantitative challenges.',
     icon: 'brain',
     color: '#8B5CF6', // Purple
