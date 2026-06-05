@@ -17,15 +17,22 @@ export const verifyGoogleTokenAndLogin = async (idToken: string): Promise<IUser>
     throw new Error('GOOGLE_CLIENT_ID is not configured on the server');
   }
 
-  // Verification handles audience and expiration checks inherently
-  const ticket = await client.verifyIdToken({
-    idToken,
-    audience: env.GOOGLE_CLIENT_ID,
-  });
+  const audiences = [env.GOOGLE_CLIENT_ID, env.GOOGLE_ANDROID_CLIENT_ID].filter(Boolean) as string[];
+
+  let ticket;
+  try {
+    ticket = await client.verifyIdToken({
+      idToken,
+      audience: audiences.length === 1 ? audiences[0] : audiences,
+    });
+  } catch (err: any) {
+    console.error('[Google Auth Error] Verification failed:', err);
+    throw new Error(`Google token verification failed: ${err.message}. Allowed audiences: ${audiences.join(', ')}`);
+  }
 
   const payload = ticket.getPayload();
   if (!payload || !payload.email) {
-    throw new Error('Invalid Google token payload');
+    throw new Error('Invalid Google token payload: payload or email is missing');
   }
 
   const { sub: googleId, email, name, picture: profilePicture } = payload;

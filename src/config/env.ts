@@ -10,6 +10,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_ANDROID_CLIENT_ID: z.string().optional(),
   SUPERADMIN_EMAIL: z.string().email().optional(),
   ALLOWED_ORIGINS: z.string().default('*'), // Comma separated for multiple frontends
   LATEST_APP_VERSION: z.string().default('1.0.2'),
