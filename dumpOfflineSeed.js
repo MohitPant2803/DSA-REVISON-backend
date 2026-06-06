@@ -23,15 +23,8 @@ async function run() {
   console.log(`Fetched ${folders.length} folders.`);
 
   console.log('Fetching playlists...');
-  const rawPlaylists = await db.collection('playlists').find({}).toArray();
-  const playlists = rawPlaylists.map(p => ({
-    ...p,
-    _id: p._id.toString(),
-    createdBy: p.createdBy ? p.createdBy.toString() : null,
-    cardIds: p.cardIds ? p.cardIds.map(id => id.toString()) : [],
-    orderedCardIds: p.orderedCardIds ? p.orderedCardIds.map(id => id.toString()) : [],
-  }));
-  console.log(`Fetched ${playlists.length} playlists.`);
+  const playlists = [];
+  console.log(`Fetched 0 playlists (skipped custom user data).`);
 
   console.log('Fetching revision cards...');
   const rawCards = await db.collection('revisioncards').find({}).toArray();
