@@ -90,7 +90,12 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       UserQuestionProgress.find({ userId, updatedAt: { $gt: sinceDate } }).lean(),
       Progress.find(progressQuery).lean(),
       DeletedEntity.find(deletedEntitiesQuery).lean(),
-      SeniorQuote.find({ updatedAt: { $gt: sinceDate } }).lean(),
+      SeniorQuote.find({
+        $or: [
+          { updatedAt: { $gt: sinceDate } },
+          { updatedAt: { $exists: false } }
+        ]
+      }).lean(),
     ]);
 
     // Print beautifully structured custom playlist sync fetch log
@@ -151,7 +156,12 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
     UserQuestionProgress.find({ userId, updatedAt: { $gt: since } }).lean(),
     Progress.find({ userId, updatedAt: { $gt: since } }).lean(),
     DeletedEntity.find({ userId, deletedAt: { $gt: since } }).lean(),
-    SeniorQuote.find({ updatedAt: { $gt: since } }).lean(),
+    SeniorQuote.find({
+      $or: [
+        { updatedAt: { $gt: since } },
+        { updatedAt: { $exists: false } }
+      ]
+    }).lean(),
   ]);
 
   return successResponse(res, 200, 'Sync delta fetched successfully', {
