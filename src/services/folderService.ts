@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import Folder, { IFolder } from '../models/folder.model';
+import { isValidId } from '../utils/validation';
 import RevisionCard from '../models/revisionCard.model';
 import FolderProgress from '../models/folderProgress.model';
 import UserCardState from '../models/userCardState.model';
@@ -14,7 +15,7 @@ import { canManageResource, canReadResource, UserRole } from '../utils/permissio
 
 const populateCreator = { path: 'createdBy', select: 'name email profilePicture role' };
 
-async function attachCardCounts<T extends { _id: Types.ObjectId }>(folders: T[], userId?: string) {
+async function attachCardCounts<T extends { _id: any }>(folders: T[], userId?: string) {
   if (folders.length === 0) return [];
   const folderIds = folders.map(f => f._id);
 
@@ -129,7 +130,7 @@ export const queryFolders = async (query: QueryFoldersInput, actorRole?: UserRol
   };
 
   if (parentFolderId) {
-    filter.parentFolderId = parentFolderId === 'null' ? null : new Types.ObjectId(parentFolderId);
+    filter.parentFolderId = parentFolderId === 'null' ? null : parentFolderId;
   } else {
     filter.parentFolderId = null;
   }
@@ -158,7 +159,7 @@ export const queryFolders = async (query: QueryFoldersInput, actorRole?: UserRol
 };
 
 export const getFolderById = async (folderId: string, actorRole?: UserRole, userId?: string) => {
-  if (!Types.ObjectId.isValid(folderId)) {
+  if (!isValidId(folderId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
   }
 
@@ -200,11 +201,10 @@ export const getFolderById = async (folderId: string, actorRole?: UserRole, user
   }
 
   const descendants = getDescendantIds(folder._id.toString());
-  const descendantObjectIds = descendants.map(id => new Types.ObjectId(id));
 
   const cardCount = await RevisionCard.countDocuments({
     isDeleted: false,
-    folderId: { $in: descendantObjectIds }
+    folderId: { $in: descendants }
   });
   const childFolders = await Folder.find({ parentFolderId: folder._id }).select('_id');
 
@@ -237,10 +237,10 @@ export const createFolder = async (data: CreateFolderInput, userId: Types.Object
   };
 
   if (data.parentFolderId) {
-    if (!Types.ObjectId.isValid(data.parentFolderId)) {
+    if (!isValidId(data.parentFolderId)) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid parent folder ID');
     }
-    payload.parentFolderId = new Types.ObjectId(data.parentFolderId);
+    payload.parentFolderId = data.parentFolderId;
   }
 
   return Folder.create(payload);
@@ -252,7 +252,7 @@ export const updateFolderById = async (
   userId: Types.ObjectId,
   userRole: UserRole
 ): Promise<IFolder> => {
-  if (!Types.ObjectId.isValid(folderId)) {
+  if (!isValidId(folderId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
   }
 
@@ -269,8 +269,8 @@ export const updateFolderById = async (
   if (updateData.parentFolderId !== undefined) {
     if (updateData.parentFolderId === null) {
       folder.parentFolderId = null;
-    } else if (Types.ObjectId.isValid(updateData.parentFolderId)) {
-      folder.parentFolderId = new Types.ObjectId(updateData.parentFolderId);
+    } else if (isValidId(updateData.parentFolderId)) {
+      folder.parentFolderId = updateData.parentFolderId;
     }
     delete updateData.parentFolderId;
   }
@@ -285,7 +285,7 @@ export const deleteFolderById = async (
   userId: Types.ObjectId,
   userRole: UserRole
 ): Promise<void> => {
-  if (!Types.ObjectId.isValid(folderId)) {
+  if (!isValidId(folderId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
   }
 
@@ -309,7 +309,7 @@ export const reorderFolderCards = async (
   userId: Types.ObjectId,
   userRole: UserRole
 ): Promise<IFolder> => {
-  if (!Types.ObjectId.isValid(folderId)) {
+  if (!isValidId(folderId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
   }
 
@@ -323,7 +323,7 @@ export const reorderFolderCards = async (
     throw new ApiError(httpStatus.FORBIDDEN, 'You are not authorized to reorder cards in this folder');
   }
 
-  folder.cardIds = cardIds.map(id => new Types.ObjectId(id));
+  folder.cardIds = cardIds;
   await folder.save();
   return folder;
 };

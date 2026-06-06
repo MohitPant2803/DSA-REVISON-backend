@@ -5,7 +5,7 @@ export type PerceivedDifficulty = 'easy' | 'medium' | 'hard' | null;
 
 export interface IUserQuestionProgress extends Document {
   userId: Types.ObjectId;
-  questionId: Types.ObjectId; // References RevisionCard
+  questionId: string; // References RevisionCard
   attemptStatus: AttemptStatus;
   perceivedDifficultyByUser: PerceivedDifficulty;
   createdAt: Date;
@@ -21,7 +21,7 @@ const UserQuestionProgressSchema = new Schema<IUserQuestionProgress>(
       index: true,
     },
     questionId: {
-      type: Schema.Types.ObjectId,
+      type: String,
       ref: 'RevisionCard',
       required: [true, 'Question ID is required'],
       index: true,

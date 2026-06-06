@@ -4,7 +4,7 @@ import RevisionCard from '../models/revisionCard.model';
 
 export const getUserCardState = async (userId: string, cardId: string): Promise<IUserCardState> => {
   const uid = new Types.ObjectId(userId);
-  const cid = new Types.ObjectId(cardId);
+  const cid = cardId;
 
   try {
     // Use findOneAndUpdate with upsert to handle concurrent insertions atomically
@@ -45,7 +45,7 @@ export const toggleWatchLater = async (userId: string, cardId: string): Promise<
 
 export const markViewed = async (userId: string, cardId: string): Promise<IUserCardState> => {
   const uid = new Types.ObjectId(userId);
-  const cid = new Types.ObjectId(cardId);
+  const cid = cardId;
 
   try {
     // 1. Atomically attempt to transition state from viewed: false/null to viewed: true
@@ -62,7 +62,7 @@ export const markViewed = async (userId: string, cardId: string): Promise<IUserC
     if (updatedState && updatedState.viewCount === 1) {
       const card = await RevisionCard.findById(cid).select('folderId rootFolderId subfolderIds').lean();
       if (card) {
-        const associatedFolderIds: Types.ObjectId[] = [];
+        const associatedFolderIds: string[] = [];
         if (card.folderId) associatedFolderIds.push(card.folderId);
         if (card.rootFolderId && card.rootFolderId.toString() !== card.folderId.toString()) {
           associatedFolderIds.push(card.rootFolderId);

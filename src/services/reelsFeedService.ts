@@ -1,4 +1,5 @@
 import mongoose, { Types } from 'mongoose';
+import { isValidId } from '../utils/validation';
 import crypto from 'crypto';
 import httpStatus from 'http-status';
 import ApiError from '../utils/ApiError';
@@ -54,7 +55,7 @@ const seededShuffle = <T>(array: T[], prng: SeededRandom): T[] => {
 
 // Compute contentHash representing the eligible card universe state
 export const computeContentHash = async (
-  selectedFolderIds: mongoose.Types.ObjectId[]
+  selectedFolderIds: string[]
 ): Promise<{ hash: string; cardCount: number }> => {
   const foldersKey = [...selectedFolderIds].map(id => id.toString()).sort().join(',');
   
@@ -88,7 +89,7 @@ export const getUserPreferences = async (userId: string): Promise<IUserReelPrefe
   if (!preference) {
     // Default to all root folders
     const rootFolders = await Folder.find({ parentFolderId: null }).select('_id').lean();
-    const folderIds = rootFolders.map(f => f._id as Types.ObjectId);
+    const folderIds = rootFolders.map(f => f._id as string);
     
     preference = await UserReelPreference.create({
       userId: new Types.ObjectId(userId),
@@ -108,17 +109,15 @@ export async function updateUserPreferences(
     throw new ApiError(httpStatus.BAD_REQUEST, 'At least one root folder must remain active');
   }
 
-  const validObjectIds = selectedRootFolderIds
-    .filter(id => Types.ObjectId.isValid(id))
-    .map(id => new Types.ObjectId(id));
+  const validFolderIds = selectedRootFolderIds.filter(id => isValidId(id));
 
-  if (validObjectIds.length === 0) {
+  if (validFolderIds.length === 0) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder selections');
   }
 
   // Server-side validation: ensure they are actual accessible root folders
   const activeRootFolders = await Folder.find({
-    _id: { $in: validObjectIds },
+    _id: { $in: validFolderIds },
     parentFolderId: null,
   })
     .select('_id')
@@ -128,7 +127,7 @@ export async function updateUserPreferences(
     throw new ApiError(httpStatus.BAD_REQUEST, 'Selected folders do not exist or are not root level');
   }
 
-  const activeIds = activeRootFolders.map(f => f._id as Types.ObjectId);
+  const activeIds = activeRootFolders.map(f => f._id as string);
 
   const preference = await UserReelPreference.findOneAndUpdate(
     { userId: new Types.ObjectId(userId) },
@@ -215,7 +214,7 @@ export async function generateReelsQueue(
     const prng = new SeededRandom(seedString);
 
     // Proportional Folder Card Sampling up to MAX_QUEUE_SIZE
-    const finalQueueIds: Types.ObjectId[] = [];
+    const finalQueueIds: string[] = [];
     const samplingCap = Math.min(MAX_QUEUE_SIZE, cardCount);
 
     // Group non-deleted cards by rootFolderId
@@ -226,7 +225,7 @@ export async function generateReelsQueue(
       .select('_id rootFolderId')
       .lean();
 
-    const folderCardGroups: Record<string, Types.ObjectId[]> = {};
+    const folderCardGroups: Record<string, string[]> = {};
     selectedFolders.forEach(id => {
       folderCardGroups[id.toString()] = [];
     });
@@ -235,7 +234,7 @@ export async function generateReelsQueue(
       if (card.rootFolderId) {
         const rootIdStr = card.rootFolderId.toString();
         if (folderCardGroups[rootIdStr]) {
-          folderCardGroups[rootIdStr].push(card._id as Types.ObjectId);
+          folderCardGroups[rootIdStr].push(card._id);
         }
       }
     });
@@ -244,8 +243,8 @@ export async function generateReelsQueue(
     const viewedStates = await UserCardState.find({ userId: uid, viewed: true }).select('cardId').lean();
     const viewedCardIds = new Set(viewedStates.map(s => s.cardId.toString()));
 
-    const folderSampledLists: Types.ObjectId[][] = [];
-    let cardsToReset: Types.ObjectId[] = [];
+    const folderSampledLists: string[][] = [];
+    let cardsToReset: string[] = [];
     let unseenEligibleCardCount = 0;
     
     for (const folderId of selectedFolders) {
@@ -253,7 +252,7 @@ export async function generateReelsQueue(
       if (groupCards.length === 0) continue;
 
       const viewedInFolder = groupCards.filter(c => viewedCardIds.has(c.toString()));
-      let unseenGroupCards: Types.ObjectId[] = [];
+      let unseenGroupCards: string[] = [];
 
       // 2. Evaluate Folder Exhaustion
       // Skip reset if triggerReason is 'preference_change'
@@ -413,7 +412,7 @@ export const getSessionSlice = async (userId: string): Promise<any> => {
     session.currentIndex = currentIdx;
     await session.save();
   }
-  let sliceIds: Types.ObjectId[] = [];
+  let sliceIds: string[] = [];
   let orderedSlice: any[] = [];
   let refillRetries = 0;
 

@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IPlaylist extends Document {
+export interface IPlaylist extends Document<string> {
+  _id: string;
   userId: mongoose.Types.ObjectId;
   name: string;
   title?: string;
@@ -13,12 +14,12 @@ export interface IPlaylist extends Document {
   completedLoops: number;
   lastCompletedAt?: Date;
   totalCardsViewed: number;
-  resumeCardId?: mongoose.Types.ObjectId;
+  resumeCardId?: string;
   resumeIndex?: number;
   lastPlayedIndex?: number;
   resumeScrollOffset?: number;
   resumeTimestamp?: Date;
-  cardIds?: mongoose.Types.ObjectId[];
+  cardIds?: string[];
   customOrderUpdatedAt?: Date;
   revision: number;
   lastModifiedLogicalSequence: number;
@@ -28,6 +29,7 @@ export interface IPlaylist extends Document {
 
 const PlaylistSchema = new Schema<IPlaylist>(
   {
+    _id: { type: String, required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     name: { type: String, required: true },
     title: { type: String },
@@ -40,12 +42,12 @@ const PlaylistSchema = new Schema<IPlaylist>(
     completedLoops: { type: Number, default: 0 },
     lastCompletedAt: { type: Date },
     totalCardsViewed: { type: Number, default: 0 },
-    resumeCardId: { type: Schema.Types.ObjectId, ref: 'RevisionCard' },
+    resumeCardId: { type: String, ref: 'RevisionCard' },
     resumeIndex: { type: Number },
     lastPlayedIndex: { type: Number },
     resumeScrollOffset: { type: Number },
     resumeTimestamp: { type: Date },
-    cardIds: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
+    cardIds: [{ type: String, ref: 'RevisionCard' }],
     customOrderUpdatedAt: { type: Date },
     revision: { type: Number, default: 0, index: true },
     lastModifiedLogicalSequence: { type: Number, default: 0 },

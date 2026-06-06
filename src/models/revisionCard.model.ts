@@ -12,7 +12,8 @@ export interface ISlide {
   blocks?: Array<any>;
 }
 
-export interface IRevisionCard extends Document {
+export interface IRevisionCard extends Document<string> {
+  _id: string;
   title: string;
   topic: string;
   explanation: string;
@@ -22,23 +23,24 @@ export interface IRevisionCard extends Document {
   difficulty: 'Easy' | 'Medium' | 'Hard';
   complexity?: Complexity;
   examples: string[];
-  folderId: Types.ObjectId;
+  folderId: string;
   createdBy: Types.ObjectId;
   visibility: CardVisibility;
   order: number;
   slides?: ISlide[];
   isDeleted?: boolean;
   deletedAt?: Date;
-  rootFolderId?: Types.ObjectId;
+  rootFolderId?: string;
   rootFolderName?: string;
   subfolderPath?: string;
-  subfolderIds?: Types.ObjectId[];
+  subfolderIds?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 const RevisionCardSchema = new Schema<IRevisionCard>(
   {
+    _id: { type: String, required: true },
     title: {
       type: String,
       required: [true, 'Title is required'],
@@ -66,7 +68,7 @@ const RevisionCardSchema = new Schema<IRevisionCard>(
     },
     examples: { type: [String], default: [] },
     folderId: {
-      type: Schema.Types.ObjectId,
+      type: String,
       ref: 'Folder',
       required: [true, 'Folder is required'],
       index: true,
@@ -96,10 +98,10 @@ const RevisionCardSchema = new Schema<IRevisionCard>(
     },
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date },
-    rootFolderId: { type: Schema.Types.ObjectId, ref: 'Folder', index: true },
+    rootFolderId: { type: String, ref: 'Folder', index: true },
     rootFolderName: { type: String, trim: true },
     subfolderPath: { type: String, trim: true },
-    subfolderIds: [{ type: Schema.Types.ObjectId, ref: 'Folder' }],
+    subfolderIds: [{ type: String, ref: 'Folder' }],
   },
   {
     timestamps: true,

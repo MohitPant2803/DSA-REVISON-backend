@@ -2,14 +2,14 @@ import mongoose, { Document, Schema, Types, model } from 'mongoose';
 
 export interface IFolderProgress extends Document {
   userId: Types.ObjectId;
-  folderId: Types.ObjectId;
+  folderId: string;
   completedLoops: number;
   lastCompletedAt?: Date;
   totalCardsViewed: number;
   seenCount: number;
   totalCount: number;
-  resumeCardId?: Types.ObjectId;
-  lastCardId?: Types.ObjectId;
+  resumeCardId?: string;
+  lastCardId?: string;
   resumeIndex?: number;
   lastIndex?: number;
   resumeScrollOffset?: number;
@@ -27,7 +27,7 @@ const FolderProgressSchema = new Schema<IFolderProgress>(
       index: true,
     },
     folderId: {
-      type: Schema.Types.ObjectId,
+      type: String,
       ref: 'Folder',
       required: true,
       index: true,
@@ -37,8 +37,8 @@ const FolderProgressSchema = new Schema<IFolderProgress>(
     totalCardsViewed: { type: Number, default: 0 },
     seenCount: { type: Number, default: 0 },
     totalCount: { type: Number, default: 0 },
-    resumeCardId: { type: Schema.Types.ObjectId, ref: 'RevisionCard' },
-    lastCardId: { type: Schema.Types.ObjectId, ref: 'RevisionCard' },
+    resumeCardId: { type: String, ref: 'RevisionCard' },
+    lastCardId: { type: String, ref: 'RevisionCard' },
     resumeIndex: { type: Number },
     lastIndex: { type: Number },
     resumeScrollOffset: { type: Number },

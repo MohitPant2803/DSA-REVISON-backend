@@ -352,30 +352,23 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
             case 'TOGGLE_PLAYLIST_ITEM': {
               const { playlistId, cardId, value } = payload;
               if (playlistId && cardId) {
-                const resolvedPlaylistId = idTranslations[playlistId] || playlistId;
-                if (resolvedPlaylistId.startsWith('temp-')) {
-                  console.warn(`[Batch Sync ID Mismatch] Missing translation mapping for toggle: ${playlistId}. Skipping.`);
-                  break;
-                }
-
                 const nextRev = await getNextUserRevision(userId, session);
                 if (value) {
-                  await addItemToPlaylistService(resolvedPlaylistId, userId, { revisionCardId: cardId }).catch(() => {});
+                  await addItemToPlaylistService(playlistId, userId, { revisionCardId: cardId }).catch(() => {});
                 } else {
-                  await removeItemFromPlaylistService(resolvedPlaylistId, userId, { revisionCardId: cardId }).catch(() => {});
+                  await removeItemFromPlaylistService(playlistId, userId, { revisionCardId: cardId }).catch(() => {});
                 }
-                await Playlist.findByIdAndUpdate(resolvedPlaylistId, { $set: { revision: nextRev } }, { session });
+                await Playlist.findByIdAndUpdate(playlistId, { $set: { revision: nextRev } }, { session });
               }
               break;
             }
 
             case 'REORDER_PLAYLIST': {
               const { playlistId, cardIds } = payload;
-              const resolvedPlaylistId = idTranslations[playlistId] || playlistId;
-              if (resolvedPlaylistId && Array.isArray(cardIds) && !resolvedPlaylistId.startsWith('temp-')) {
+              if (playlistId && Array.isArray(cardIds)) {
                 const nextRev = await getNextUserRevision(userId, session);
-                await reorderPlaylistService(resolvedPlaylistId, userId, cardIds);
-                await Playlist.findByIdAndUpdate(resolvedPlaylistId, { $set: { revision: nextRev } }, { session });
+                await reorderPlaylistService(playlistId, userId, cardIds);
+                await Playlist.findByIdAndUpdate(playlistId, { $set: { revision: nextRev } }, { session });
               }
               break;
             }
@@ -392,36 +385,14 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
             }
 
             case 'CREATE_PLAYLIST': {
-              const { tempId, name, color1, color2 } = payload;
-              if (name) {
-                const existing = await Playlist.findOne({ userId, name }).session(session);
+              const { playlistId, tempId, name, color1, color2, cardIds } = payload;
+              const id = playlistId || tempId;
+              if (name && id) {
+                const existing = await Playlist.findById(id).session(session);
                 if (!existing) {
                   const nextRev = await getNextUserRevision(userId, session);
-                  const playlist = await createPlaylistService(userId, { name, color1, color2 });
-                  
+                  const playlist = await createPlaylistService(userId, { _id: id, name, color1, color2, cardIds });
                   await Playlist.findByIdAndUpdate(playlist._id, { $set: { revision: nextRev } }, { session });
-                  
-                  if (tempId) {
-                    const realId = playlist._id.toString();
-                    idTranslations[tempId] = realId;
-                    console.log(`[Batch Sync ID Map] Mapped temporary playlist ID: ${tempId} -> ${realId}`);
-                    // Save translation side-effect inside ProcessedMutation lock document!
-                    await ProcessedMutation.findOneAndUpdate(
-                      { mutationId, userId, deviceId },
-                      { $set: { translations: { [tempId]: realId } } },
-                      { session }
-                    );
-                  }
-                } else {
-                  if (tempId) {
-                    const realId = existing._id.toString();
-                    idTranslations[tempId] = realId;
-                    await ProcessedMutation.findOneAndUpdate(
-                      { mutationId, userId, deviceId },
-                      { $set: { translations: { [tempId]: realId } } },
-                      { session }
-                    );
-                  }
                 }
               }
               break;
@@ -429,12 +400,11 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
 
             case 'DELETE_PLAYLIST': {
               const { playlistId } = payload;
-              const resolvedPlaylistId = idTranslations[playlistId] || playlistId;
-              if (resolvedPlaylistId && !resolvedPlaylistId.startsWith('temp-')) {
+              if (playlistId) {
                 const nextRev = await getNextUserRevision(userId, session);
-                await deletePlaylistService(resolvedPlaylistId, userId);
+                await deletePlaylistService(playlistId, userId);
                 await DeletedEntity.findOneAndUpdate(
-                  { userId, entityId: resolvedPlaylistId, entityType: 'playlist' },
+                  { userId, entityId: playlistId, entityType: 'playlist' },
                   { $set: { revision: nextRev, deletedAt: new Date() } },
                   { upsert: true, new: true, session }
                 );
@@ -444,46 +414,23 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
 
             case 'UPDATE_PLAYLIST': {
               const { playlistId, name } = payload;
-              const resolvedPlaylistId = idTranslations[playlistId] || playlistId;
-              if (resolvedPlaylistId && name && !resolvedPlaylistId.startsWith('temp-')) {
+              if (playlistId && name) {
                 const nextRev = await getNextUserRevision(userId, session);
-                await updatePlaylistService(resolvedPlaylistId, userId, { name });
-                await Playlist.findByIdAndUpdate(resolvedPlaylistId, { $set: { revision: nextRev } }, { session });
+                await updatePlaylistService(playlistId, userId, { name });
+                await Playlist.findByIdAndUpdate(playlistId, { $set: { revision: nextRev } }, { session });
               }
               break;
             }
 
             case 'CREATE_FOLDER': {
-              const { tempId, dto } = payload;
-              if (dto && dto.title) {
-                const existing = await Folder.findOne({ createdBy: userId, title: dto.title }).session(session);
+              const { folderId, tempId, dto } = payload;
+              const id = folderId || tempId || dto?._id;
+              if (dto && dto.title && id) {
+                const existing = await Folder.findById(id).session(session);
                 if (!existing) {
                   const nextRev = await getNextUserRevision(userId, session);
-                  const folder = await createFolder(dto, new mongoose.Types.ObjectId(userId));
-                  
+                  const folder = await createFolder({ _id: id, ...dto }, new mongoose.Types.ObjectId(userId));
                   await Folder.findByIdAndUpdate(folder._id, { $set: { revision: nextRev } }, { session });
-                  
-                  if (tempId) {
-                    const realId = folder._id.toString();
-                    idTranslations[tempId] = realId;
-                    console.log(`[Batch Sync ID Map] Mapped temporary folder ID: ${tempId} -> ${realId}`);
-                    // Save translation side-effect inside ProcessedMutation lock document!
-                    await ProcessedMutation.findOneAndUpdate(
-                      { mutationId, userId, deviceId },
-                      { $set: { translations: { [tempId]: realId } } },
-                      { session }
-                    );
-                  }
-                } else {
-                  if (tempId) {
-                    const realId = existing._id.toString();
-                    idTranslations[tempId] = realId;
-                    await ProcessedMutation.findOneAndUpdate(
-                      { mutationId, userId, deviceId },
-                      { $set: { translations: { [tempId]: realId } } },
-                      { session }
-                    );
-                  }
                 }
               }
               break;
@@ -491,12 +438,11 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
 
             case 'DELETE_FOLDER': {
               const { folderId } = payload;
-              const resolvedFolderId = idTranslations[folderId] || folderId;
-              if (resolvedFolderId && !resolvedFolderId.startsWith('temp-')) {
+              if (folderId) {
                 const nextRev = await getNextUserRevision(userId, session);
-                await deleteFolderById(resolvedFolderId, new mongoose.Types.ObjectId(userId), role);
+                await deleteFolderById(folderId, new mongoose.Types.ObjectId(userId), role);
                 await DeletedEntity.findOneAndUpdate(
-                  { userId, entityId: resolvedFolderId, entityType: 'folder' },
+                  { userId, entityId: folderId, entityType: 'folder' },
                   { $set: { revision: nextRev, deletedAt: new Date() } },
                   { upsert: true, new: true, session }
                 );
@@ -506,11 +452,10 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
 
             case 'UPDATE_FOLDER': {
               const { folderId, updateData } = payload;
-              const resolvedFolderId = idTranslations[folderId] || folderId;
-              if (resolvedFolderId && updateData && !resolvedFolderId.startsWith('temp-')) {
+              if (folderId && updateData) {
                 const nextRev = await getNextUserRevision(userId, session);
-                await updateFolderById(resolvedFolderId, updateData, new mongoose.Types.ObjectId(userId), role);
-                await Folder.findByIdAndUpdate(resolvedFolderId, { $set: { revision: nextRev } }, { session });
+                await updateFolderById(folderId, updateData, new mongoose.Types.ObjectId(userId), role);
+                await Folder.findByIdAndUpdate(folderId, { $set: { revision: nextRev } }, { session });
               }
               break;
             }
@@ -519,11 +464,12 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
               if (role !== 'admin' && role !== 'superadmin') {
                 throw new Error('Unauthorized: only admin/superadmin can create cards');
               }
-              const { dto } = payload;
-              if (dto && dto.title) {
-                const existing = await RevisionCard.findOne({ createdBy: userId, title: dto.title }).session(session);
+              const { cardId, tempId, dto } = payload;
+              const id = cardId || tempId || dto?._id;
+              if (dto && dto.title && id) {
+                const existing = await RevisionCard.findById(id).session(session);
                 if (!existing) {
-                  await RevisionCard.create([{ ...dto, createdBy: userId }], { session });
+                  await RevisionCard.create([{ _id: id, ...dto, createdBy: userId }], { session });
                 }
               }
               break;

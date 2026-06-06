@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUserReelPreference extends Document {
   userId: mongoose.Types.ObjectId;
-  selectedRootFolderIds: mongoose.Types.ObjectId[];
+  selectedRootFolderIds: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -10,7 +10,7 @@ export interface IUserReelPreference extends Document {
 const UserReelPreferenceSchema = new Schema<IUserReelPreference>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
-    selectedRootFolderIds: [{ type: Schema.Types.ObjectId, ref: 'Folder' }],
+    selectedRootFolderIds: [{ type: String, ref: 'Folder' }],
   },
   { timestamps: true, versionKey: false }
 );

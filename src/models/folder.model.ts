@@ -3,7 +3,8 @@ import mongoose, { Document, Schema, Types, model } from 'mongoose';
 export type FolderVisibility = 'public' | 'private';
 export type RoleAccess = 'user' | 'admin' | 'superadmin';
 
-export interface IFolder extends Document {
+export interface IFolder extends Document<string> {
+  _id: string;
   title: string;
   description?: string;
   icon: string;
@@ -12,8 +13,8 @@ export interface IFolder extends Document {
   visibility: FolderVisibility;
   roleAccess: RoleAccess[];
   order: number;
-  parentFolderId?: Types.ObjectId | null;
-  cardIds: Types.ObjectId[];
+  parentFolderId?: string | null;
+  cardIds: string[];
   revision: number;
   lastModifiedLogicalSequence: number;
   createdAt: Date;
@@ -22,6 +23,7 @@ export interface IFolder extends Document {
 
 const FolderSchema = new Schema<IFolder>(
   {
+    _id: { type: String, required: true },
     title: {
       type: String,
       required: [true, 'Title is required'],
@@ -47,12 +49,12 @@ const FolderSchema = new Schema<IFolder>(
     },
     order: { type: Number, default: 0 },
     parentFolderId: {
-      type: Schema.Types.ObjectId,
+      type: String,
       ref: 'Folder',
       default: null,
     },
     cardIds: {
-      type: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
+      type: [{ type: String, ref: 'RevisionCard' }],
       default: [],
     },
     revision: { type: Number, default: 0, index: true },

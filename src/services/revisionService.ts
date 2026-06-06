@@ -1,5 +1,6 @@
 import httpStatus from 'http-status';
 import { Types } from 'mongoose';
+import { isValidId } from '../utils/validation';
 import RevisionCard, { IRevisionCard } from '../models/revisionCard.model';
 import Folder from '../models/folder.model';
 import Progress from '../models/progress.model';
@@ -47,13 +48,13 @@ export const queryRevisionCards = async (
   if (difficulty) {
     filter.difficulty = difficulty;
   }
-  let folderCardIds: Types.ObjectId[] | null = null;
+  let folderCardIds: string[] | null = null;
   if (folderId) {
-    if (!Types.ObjectId.isValid(folderId)) {
+    if (!isValidId(folderId)) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
     }
     // Fetch all child subfolder IDs recursively to support sheet-level and folder-level queries
-    const childFolders = await Folder.find({ parentFolderId: new Types.ObjectId(folderId) }).select('_id cardIds');
+    const childFolders = await Folder.find({ parentFolderId: folderId }).select('_id cardIds');
     const rootFolder = await Folder.findById(folderId).select('_id cardIds');
     const allFolders = [...(rootFolder ? [rootFolder] : []), ...childFolders];
     
@@ -102,17 +103,17 @@ export const queryRevisionCards = async (
       const orConditions: any[] = [];
 
       if (states.includes('unattempted')) {
-        orConditions.push({ _id: { $nin: attemptedQuestionIds.map((id) => new Types.ObjectId(id)) } });
+        orConditions.push({ _id: { $nin: attemptedQuestionIds } });
       }
 
       if (matchedQuestionIds.length > 0) {
-        orConditions.push({ _id: { $in: matchedQuestionIds.map((id) => new Types.ObjectId(id)) } });
+        orConditions.push({ _id: { $in: matchedQuestionIds } });
       }
 
       if (orConditions.length > 0) {
         filter.$or = orConditions;
       } else {
-        filter._id = new Types.ObjectId();
+        filter._id = 'non-existent-id-fallback';
       }
     }
   }
@@ -212,11 +213,11 @@ export const queryRevisionCards = async (
 };
 
 export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, userId?: string) => {
-  if (!Types.ObjectId.isValid(cardId)) {
+  if (!isValidId(cardId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid card ID');
   }
 
-  const card = await RevisionCard.findOne({ _id: new Types.ObjectId(cardId), isDeleted: { $ne: true } })
+  const card = await RevisionCard.findOne({ _id: cardId, isDeleted: { $ne: true } })
     .populate(populateCreator)
     .populate('folderId', 'title icon color')
     .lean() as any;
@@ -267,8 +268,8 @@ export const getRevisionCardById = async (cardId: string, actorRole?: UserRole, 
   return card;
 };
 
-const resolveFolderMetadata = async (folderId: Types.ObjectId | string) => {
-  const subfolderIds: Types.ObjectId[] = [];
+const resolveFolderMetadata = async (folderId: string) => {
+  const subfolderIds: string[] = [];
   const titles: string[] = [];
   let tempFolder = await Folder.findById(folderId).lean() as any;
   
@@ -277,7 +278,7 @@ const resolveFolderMetadata = async (folderId: Types.ObjectId | string) => {
   }
 
   while (tempFolder) {
-    subfolderIds.unshift(tempFolder._id as Types.ObjectId);
+    subfolderIds.unshift(tempFolder._id as string);
     titles.unshift(tempFolder.title);
     if (tempFolder.parentFolderId) {
       tempFolder = await Folder.findById(tempFolder.parentFolderId).lean() as any;
@@ -298,7 +299,7 @@ export const createRevisionCard = async (
   cardData: CreateRevisionCardInput,
   userId: Types.ObjectId
 ): Promise<IRevisionCard> => {
-  if (!Types.ObjectId.isValid(cardData.folderId)) {
+  if (!isValidId(cardData.folderId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
   }
 
@@ -311,7 +312,7 @@ export const createRevisionCard = async (
 
   const card = await RevisionCard.create({
     ...cardData,
-    folderId: new Types.ObjectId(cardData.folderId),
+    folderId: cardData.folderId,
     createdBy: userId,
     ...pathMetadata,
   });
@@ -333,7 +334,7 @@ export const updateRevisionCardById = async (
   userId: Types.ObjectId,
   userRole: UserRole
 ): Promise<IRevisionCard> => {
-  if (!Types.ObjectId.isValid(cardId)) {
+  if (!isValidId(cardId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid card ID');
   }
 
@@ -348,7 +349,7 @@ export const updateRevisionCardById = async (
   }
 
   if (updateData.folderId) {
-    if (!Types.ObjectId.isValid(updateData.folderId)) {
+    if (!isValidId(updateData.folderId)) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
     }
     const folder = await Folder.findById(updateData.folderId);
@@ -356,7 +357,7 @@ export const updateRevisionCardById = async (
       throw new ApiError(httpStatus.NOT_FOUND, 'Folder not found');
     }
     const oldFolderId = card.folderId;
-    card.folderId = new Types.ObjectId(updateData.folderId);
+    card.folderId = updateData.folderId;
 
     // If moving folders, pull cardId from old folder and push to new folder
     if (oldFolderId && oldFolderId.toString() !== updateData.folderId.toString()) {
@@ -380,7 +381,7 @@ export const deleteRevisionCardById = async (
   userId: Types.ObjectId,
   userRole: UserRole
 ): Promise<void> => {
-  if (!Types.ObjectId.isValid(cardId)) {
+  if (!isValidId(cardId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid card ID');
   }
 
@@ -413,7 +414,7 @@ export const getRevisionCardsByIds = async (
   actorRole?: UserRole,
   userId?: string
 ) => {
-  const validIds = cardIds.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+  const validIds = cardIds.filter((id) => isValidId(id));
   if (validIds.length === 0) return [];
 
   const filter = {

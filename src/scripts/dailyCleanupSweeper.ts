@@ -27,7 +27,7 @@ async function runCleanup() {
       .select('_id')
       .lean();
 
-    const deletedIds = deletedCards.map(c => c._id as Types.ObjectId);
+    const deletedIds = deletedCards.map(c => c._id as string);
     console.log(`ℹ️ Found ${deletedIds.length} soft-deleted cards in database.`);
 
     if (deletedIds.length === 0) {

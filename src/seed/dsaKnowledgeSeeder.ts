@@ -1,18 +1,133 @@
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import { STATIC_IDS } from './staticIds';
+import DeletedEntity from '../models/deletedEntity.model';
+import { getNextUserRevision } from '../utils/revision.utility';
 
 const idMap = new Map<string, string>();
 
-const generateDeterministicObjectId = (input: string): mongoose.Types.ObjectId => {
-  const idStr = STATIC_IDS[input];
-  if (!idStr) {
-    const hash = crypto.createHash('md5').update(input).digest('hex');
-    const fallbackId = hash.substring(0, 24);
-    logger.warn(`⚠️ Warning: ID not found in STATIC_IDS for key: "${input}". Generated fallback: ${fallbackId}`);
-    return new mongoose.Types.ObjectId(fallbackId);
+const MIGRATION_NAMESPACE = '3b671a64-40d5-491e-99b0-da01ff1f3341';
+
+function parseUUID(uuidStr: string): Uint8Array {
+  const hex = uuidStr.replace(/-/g, '');
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
   }
-  return new mongoose.Types.ObjectId(idStr);
+  return bytes;
+}
+
+function stringToUtf8Bytes(str: string): Uint8Array {
+  const utf8 = [];
+  for (let i = 0; i < str.length; i++) {
+    let charcode = str.charCodeAt(i);
+    if (charcode < 0x80) utf8.push(charcode);
+    else if (charcode < 0x800) {
+      utf8.push(0xc0 | (charcode >> 6), 0x80 | (charcode & 0x3f));
+    } else if (charcode < 0xd800 || charcode >= 0xe000) {
+      utf8.push(0xe0 | (charcode >> 12), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+    } else {
+      i++;
+      charcode = 0x10000 + (((charcode & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
+      utf8.push(0xf0 | (charcode >> 18), 0x80 | ((charcode >> 12) & 0x3f), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+    }
+  }
+  return new Uint8Array(utf8);
+}
+
+function sha1(bytes: Uint8Array): Uint8Array {
+  const len = bytes.length;
+  const wordCount = ((len + 8) >> 6) + 1;
+  const words = new Int32Array(wordCount * 16);
+  for (let i = 0; i < len; i++) {
+    words[i >> 2] |= bytes[i] << (24 - (i & 3) * 8);
+  }
+  words[len >> 2] |= 0x80 << (24 - (len & 3) * 8);
+  const bitLen = len * 8;
+  words[words.length - 1] = bitLen & 0xffffffff;
+  words[words.length - 2] = (bitLen / 0x100000000) & 0xffffffff;
+  
+  let h0 = 1732584193;
+  let h1 = -271733879;
+  let h2 = -1732584194;
+  let h3 = 271733878;
+  let h4 = -1009589776;
+  
+  const w = new Int32Array(80);
+  for (let i = 0; i < words.length; i += 16) {
+    let a = h0;
+    let b = h1;
+    let c = h2;
+    let d = h3;
+    let e = h4;
+    for (let j = 0; j < 80; j++) {
+      if (j < 16) {
+        w[j] = words[i + j];
+      } else {
+        const num = w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16];
+        w[j] = (num << 1) | (num >>> 31);
+      }
+      let f = 0;
+      let k = 0;
+      if (j < 20) {
+        f = (b & c) | (~b & d);
+        k = 1518500249;
+      } else if (j < 40) {
+        f = b ^ c ^ d;
+        k = 1859775393;
+      } else if (j < 60) {
+        f = (b & c) | (b & d) | (c & d);
+        k = -1894007588;
+      } else {
+        f = b ^ c ^ d;
+        k = -899497514;
+      }
+      const temp = (((a << 5) | (a >>> 27)) + f + e + k + w[j]) | 0;
+      e = d;
+      d = c;
+      c = (b << 30) | (b >>> 2);
+      b = a;
+      a = temp;
+    }
+    h0 = (h0 + a) | 0;
+    h1 = (h1 + b) | 0;
+    h2 = (h2 + c) | 0;
+    h3 = (h3 + d) | 0;
+    h4 = (h4 + e) | 0;
+  }
+  const result = new Uint8Array(20);
+  for (let i = 0; i < 5; i++) {
+    const h = i === 0 ? h0 : i === 1 ? h1 : i === 2 ? h2 : i === 3 ? h3 : h4;
+    result[i * 4] = (h >>> 24) & 0xff;
+    result[i * 4 + 1] = (h >>> 16) & 0xff;
+    result[i * 4 + 2] = (h >>> 8) & 0xff;
+    result[i * 4 + 3] = h & 0xff;
+  }
+  return result;
+}
+
+const generateDeterministicUUID = (input: string): string => {
+  const nsBytes = parseUUID(MIGRATION_NAMESPACE);
+  const nameBytes = stringToUtf8Bytes(input);
+  const totalBytes = new Uint8Array(nsBytes.length + nameBytes.length);
+  totalBytes.set(nsBytes);
+  totalBytes.set(nameBytes, nsBytes.length);
+  
+  const hash = sha1(totalBytes);
+  
+  // Set version to 5
+  hash[6] = (hash[6] & 0x0f) | 0x50;
+  // Set variant to RFC4122
+  hash[8] = (hash[8] & 0x3f) | 0x80;
+  
+  const hex = Array.from(hash).map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.substr(0, 8)}-${hex.substr(8, 4)}-${hex.substr(12, 4)}-${hex.substr(16, 4)}-${hex.substr(20, 12)}`;
+};
+
+const generateDeterministicObjectId = (input: string): string => {
+  const newId = generateDeterministicUUID(input);
+  idMap.set(input, newId);
+  return newId;
 };
 
 import { connectDB } from '../config/db';
@@ -3153,8 +3268,10 @@ const runDSAKnowledgeSeeder = async () => {
 
     // b. Clear out existing folders and cards created by the System Admin or legacy ones to prevent duplicates
     logger.info('🧹 Scrubbing existing seeded system folders and cards for fresh start...');
-    const existingFolders = await Folder.find({ createdBy: adminId });
-    const existingFolderIds = existingFolders.map(f => f._id);
+    const existingFolders = await Folder.find({ createdBy: adminId }).lean();
+    const existingFolderIds = existingFolders.map(f => f._id.toString());
+    const existingCards = await RevisionCard.find({ createdBy: adminId }).lean();
+    const existingCardIds = existingCards.map(c => c._id.toString());
     
     await RevisionCard.deleteMany({
       $or: [
@@ -3333,7 +3450,7 @@ const runDSAKnowledgeSeeder = async () => {
     // e. Populate Subfolders and Cards
     let totalCardsSeeded = 0;
     let totalSubfoldersSeeded = 0;
-    const cardMapByName = new Map<string, mongoose.Types.ObjectId>();
+    const cardMapByName = new Map<string, string>();
 
     for (const sheetTitle of Object.keys(sheetTitleToIdMap)) {
       const parentId = sheetTitleToIdMap[sheetTitle];
@@ -3391,16 +3508,16 @@ const runDSAKnowledgeSeeder = async () => {
           visibility: 'public',
           roleAccess: ['user', 'admin', 'superadmin'],
           order: subfolderOrder++,
-          parentFolderId: new mongoose.Types.ObjectId(parentId),
+          parentFolderId: parentId,
         });
         totalSubfoldersSeeded++;
 
         // Seed individual Revision Cards inside this subfolder
         let cardOrder = 0;
-        const subfolderCardIds: mongoose.Types.ObjectId[] = [];
+        const subfolderCardIds: string[] = [];
         for (const q of questionsInSub) {
           const normalizedTitle = q.title.trim().toLowerCase();
-          let cardId: mongoose.Types.ObjectId;
+          let cardId: string;
 
           if (cardMapByName.has(normalizedTitle)) {
             cardId = cardMapByName.get(normalizedTitle)!;
@@ -3440,7 +3557,7 @@ const runDSAKnowledgeSeeder = async () => {
               order: cardOrder++,
               slides: richSlides,
             });
-            cardId = newCard._id as mongoose.Types.ObjectId;
+            cardId = newCard._id;
             cardMapByName.set(normalizedTitle, cardId);
             totalCardsSeeded++;
           }
@@ -3453,6 +3570,41 @@ const runDSAKnowledgeSeeder = async () => {
 
         logger.info(`   ✅ Created Subfolder "${subTitle}" with ${questionsInSub.length} question cards.`);
       }
+    }
+
+    // f. Create deletion tombstones for any seeded folders/cards that were deleted from seeder code
+    const seededIds = new Set(idMap.values());
+    const deletedFoldersList = existingFolderIds.filter(id => !seededIds.has(id));
+    const deletedCardsList = existingCardIds.filter(id => !seededIds.has(id));
+    
+    if (deletedFoldersList.length > 0 || deletedCardsList.length > 0) {
+      logger.info(`\n🧹 Found deleted seeded entities. Writing tombstones...`);
+      const allUsers = await User.find({}).lean();
+      
+      for (const folderId of deletedFoldersList) {
+        logger.info(`   - Folder deleted: ${folderId}`);
+        for (const user of allUsers) {
+          const nextRev = await getNextUserRevision(user._id.toString());
+          await DeletedEntity.findOneAndUpdate(
+            { userId: user._id, entityId: folderId, entityType: 'folder' },
+            { userId: user._id, entityId: folderId, entityType: 'folder', revision: nextRev, deletedAt: new Date() },
+            { upsert: true, new: true }
+          );
+        }
+      }
+      
+      for (const cardId of deletedCardsList) {
+        logger.info(`   - Card deleted: ${cardId}`);
+        for (const user of allUsers) {
+          const nextRev = await getNextUserRevision(user._id.toString());
+          await DeletedEntity.findOneAndUpdate(
+            { userId: user._id, entityId: cardId, entityType: 'card' },
+            { userId: user._id, entityId: cardId, entityType: 'card', revision: nextRev, deletedAt: new Date() },
+            { upsert: true, new: true }
+          );
+        }
+      }
+      logger.info(`✅ Tombstones written successfully for all users.`);
     }
 
     logger.info('\n======================================================');

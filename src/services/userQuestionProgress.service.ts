@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { isValidId } from '../utils/validation';
 import UserQuestionProgress, { AttemptStatus, PerceivedDifficulty } from '../models/userQuestionProgress.model';
 import Progress from '../models/progress.model';
 import RevisionCard from '../models/revisionCard.model';
@@ -14,7 +15,7 @@ import { ensureUserSystemPlaylists } from './playlist.service';
  */
 async function atomicSyncFocusArea(
   userObjectId: mongoose.Types.ObjectId,
-  questionObjectId: mongoose.Types.ObjectId,
+  questionObjectId: string,
   state: 'easy' | 'medium' | 'hard' | 'skipped' | null
 ): Promise<void> {
   try {
@@ -65,7 +66,7 @@ export const updateUserQuestionProgress = async (
   state: 'easy' | 'medium' | 'hard' | 'skipped' | null,
   skipPlaylistUpdate = false
 ) => {
-  if (!mongoose.Types.ObjectId.isValid(questionId)) {
+  if (!isValidId(questionId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid question ID');
   }
 
@@ -75,7 +76,7 @@ export const updateUserQuestionProgress = async (
   }
 
   const userObjectId = new mongoose.Types.ObjectId(userId);
-  const questionObjectId = new mongoose.Types.ObjectId(questionId);
+  const questionObjectId = questionId;
 
   // If state is null, delete the progress record entirely (resetting to unattempted)
   if (state === null) {

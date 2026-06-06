@@ -11,8 +11,8 @@ if (!mongoUri) {
   process.exit(1);
 }
 
-const resolveFolderMetadata = async (folderId: Types.ObjectId | string) => {
-  const subfolderIds: Types.ObjectId[] = [];
+const resolveFolderMetadata = async (folderId: string) => {
+  const subfolderIds: string[] = [];
   const titles: string[] = [];
   let tempFolder = await Folder.findById(folderId).lean() as any;
   
@@ -21,7 +21,7 @@ const resolveFolderMetadata = async (folderId: Types.ObjectId | string) => {
   }
 
   while (tempFolder) {
-    subfolderIds.unshift(tempFolder._id as Types.ObjectId);
+    subfolderIds.unshift(tempFolder._id as string);
     titles.unshift(tempFolder.title);
     if (tempFolder.parentFolderId) {
       tempFolder = await Folder.findById(tempFolder.parentFolderId).lean() as any;

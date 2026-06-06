@@ -1,4 +1,5 @@
-import mongoose from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
+import { isValidId } from '../utils/validation';
 import Playlist, { IPlaylist } from '../models/playlist.model';
 import RevisionCard from '../models/revisionCard.model';
 import Progress from '../models/progress.model';
@@ -53,7 +54,7 @@ const getSystemPlaylistCardIds = async (userId: string, systemKey: SystemPlaylis
     .lean();
 
   const seenTitles = new Set<string>();
-  const cardIds: mongoose.Types.ObjectId[] = [];
+  const cardIds: string[] = [];
 
   progressRecords.forEach((p: any) => {
     const card = p.questionId;
@@ -138,8 +139,7 @@ export const logUserPlaylistCatalogSummary = async (userId: string, email?: stri
 export const createPlaylistService = async (userId: string, data: any): Promise<IPlaylist> => {
   const uniqueCardIds = Array.isArray(data.cardIds)
     ? Array.from(new Set<string>(data.cardIds.map((id: any) => id.toString())))
-        .filter((id) => mongoose.Types.ObjectId.isValid(id))
-        .map((id) => new mongoose.Types.ObjectId(id))
+        .filter((id) => isValidId(id))
     : [];
 
   return Playlist.create({
@@ -263,7 +263,7 @@ export const getPlaylistByIdService = async (playlistId: string, userId: string)
     };
   }
 
-  if (!mongoose.Types.ObjectId.isValid(playlistId)) {
+  if (!isValidId(playlistId)) {
     return null;
   }
 
@@ -310,7 +310,7 @@ export const addItemToPlaylistService = async (
     playlist.cardIds = [];
   }
 
-  if (!mongoose.Types.ObjectId.isValid(cardIdStr)) return false;
+  if (!isValidId(cardIdStr)) return false;
 
   const existingIds = new Set(playlist.cardIds.map((id) => id.toString()));
   if (existingIds.has(cardIdStr)) {
@@ -320,8 +320,8 @@ export const addItemToPlaylistService = async (
   }
 
   playlist.cardIds = [
-    ...Array.from(existingIds).map((id) => new mongoose.Types.ObjectId(id)),
-    new mongoose.Types.ObjectId(cardIdStr),
+    ...Array.from(existingIds),
+    cardIdStr,
   ];
   playlist.itemCount = playlist.cardIds.length;
   await playlist.save();
@@ -347,7 +347,7 @@ export const removeItemFromPlaylistService = async (
   const lengthBefore = beforeIds.length;
   const nextIds = beforeIds.filter((id) => id !== cardIdStr);
   const uniqueNextIds = Array.from(new Set(nextIds));
-  playlist.cardIds = uniqueNextIds.map((id) => new mongoose.Types.ObjectId(id));
+  playlist.cardIds = uniqueNextIds;
 
   if (playlist.cardIds.length !== lengthBefore) {
     playlist.itemCount = playlist.cardIds.length;
@@ -377,8 +377,8 @@ export const reorderPlaylistService = async (playlistId: string, userId: string,
   if (!playlist) throw new Error('Playlist not found or unauthorized');
 
   const uniqueIds = Array.from(new Set(cardIds.map((id) => id.toString())))
-    .filter((id) => mongoose.Types.ObjectId.isValid(id));
-  playlist.cardIds = uniqueIds.map((id) => new mongoose.Types.ObjectId(id));
+    .filter((id) => isValidId(id));
+  playlist.cardIds = uniqueIds;
   playlist.itemCount = playlist.cardIds.length;
   playlist.customOrderUpdatedAt = new Date();
   await playlist.save();

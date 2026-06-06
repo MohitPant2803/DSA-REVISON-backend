@@ -2,14 +2,14 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUserReelSession extends Document {
   userId: mongoose.Types.ObjectId;
-  queue: mongoose.Types.ObjectId[];
+  queue: string[];
   currentIndex: number;
   deepestIndexReached: number;
   queueVersion: number;
   contentHash: string;
   isGenerating: boolean;
   eligibleCardCount: number;
-  selectedFolderSnapshot: mongoose.Types.ObjectId[];
+  selectedFolderSnapshot: string[];
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -18,14 +18,14 @@ export interface IUserReelSession extends Document {
 const UserReelSessionSchema = new Schema<IUserReelSession>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
-    queue: [{ type: Schema.Types.ObjectId, ref: 'RevisionCard' }],
+    queue: [{ type: String, ref: 'RevisionCard' }],
     currentIndex: { type: Number, default: 0 },
     deepestIndexReached: { type: Number, default: 0 },
     queueVersion: { type: Number, default: 1 },
     contentHash: { type: String, default: '' },
     isGenerating: { type: Boolean, default: false },
     eligibleCardCount: { type: Number, default: 0 },
-    selectedFolderSnapshot: [{ type: Schema.Types.ObjectId, ref: 'Folder' }],
+    selectedFolderSnapshot: [{ type: String, ref: 'Folder' }],
     expiresAt: { type: Date, required: true },
   },
   { timestamps: true, versionKey: false }

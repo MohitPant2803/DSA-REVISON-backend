@@ -50,7 +50,7 @@ export const updateProgressService = async (userId: string, data: ProgressUpdate
     updatePayload.stateChangedAt = new Date();
 
     if (revisionCardId) {
-      const qid = new mongoose.Types.ObjectId(revisionCardId);
+      const qid = revisionCardId;
       const uid = new mongoose.Types.ObjectId(userId);
       if (difficultyState === null) {
         await UserQuestionProgress.deleteOne({ userId: uid, questionId: qid });
@@ -349,7 +349,6 @@ export const getAdminAnalyticsService = async () => {
 
 export const registerLoopService = async (userId: string, type: 'folder' | 'playlist', id: string, cardsViewed: number) => {
   const objectId = new mongoose.Types.ObjectId(userId);
-  const targetId = new mongoose.Types.ObjectId(id);
 
   if (type === 'playlist') {
     const Playlist = mongoose.model('Playlist');
@@ -357,7 +356,7 @@ export const registerLoopService = async (userId: string, type: 'folder' | 'play
 
     // Update global playlist counts
     await Playlist.findOneAndUpdate(
-      { _id: targetId, userId: objectId },
+      { _id: id, userId: objectId },
       {
         $inc: { completedLoops: 1, totalCardsViewed: cardsViewed },
         $set: { lastCompletedAt: new Date() },
@@ -367,7 +366,7 @@ export const registerLoopService = async (userId: string, type: 'folder' | 'play
 
     // Update or insert user's specific progress for this playlist
     const playlistProgress = await PlaylistProgress.findOneAndUpdate(
-      { userId: objectId, playlistId: targetId },
+      { userId: objectId, playlistId: id },
       {
         $inc: { completedLoops: 1 },
       },
@@ -377,7 +376,7 @@ export const registerLoopService = async (userId: string, type: 'folder' | 'play
   } else if (type === 'folder') {
     const FolderProgress = mongoose.model('FolderProgress');
     const folderProgress = await FolderProgress.findOneAndUpdate(
-      { userId: objectId, folderId: targetId },
+      { userId: objectId, folderId: id },
       {
         $inc: { completedLoops: 1, totalCardsViewed: cardsViewed },
         $set: { lastCompletedAt: new Date() },
@@ -414,7 +413,6 @@ export const updateResumeStateService = async (
   }
 ) => {
   const objectId = new mongoose.Types.ObjectId(userId);
-  const targetId = new mongoose.Types.ObjectId(id);
 
   // Map both naming schemes to ensure compatibility
   const lastCardId = resumeData.lastCardId || resumeData.resumeCardId;
@@ -445,14 +443,14 @@ export const updateResumeStateService = async (
       playlistPayload.lastPlayedIndex = lastIndex;
     }
     await Playlist.findOneAndUpdate(
-      { _id: targetId, userId: objectId },
+      { _id: id, userId: objectId },
       { $set: playlistPayload },
       { new: true }
     ).catch(() => {});
 
     // Save in PlaylistProgress (the source of truth now)
     return PlaylistProgress.findOneAndUpdate(
-      { userId: objectId, playlistId: targetId },
+      { userId: objectId, playlistId: id },
       { $set: {
           lastCardId,
           lastIndex,
@@ -463,7 +461,7 @@ export const updateResumeStateService = async (
   } else if (type === 'folder') {
     const FolderProgress = mongoose.model('FolderProgress');
     return FolderProgress.findOneAndUpdate(
-      { userId: objectId, folderId: targetId },
+      { userId: objectId, folderId: id },
       { $set: updatePayload },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
