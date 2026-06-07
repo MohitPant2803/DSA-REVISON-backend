@@ -130,6 +130,18 @@ const generateDeterministicObjectId = (input: string): string => {
   return newId;
 };
 
+function stripEmojis(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/g, '')
+    .replace(/[\u2600-\u27BF]/g, (match) => {
+      if (match === '\u2713') return match;
+      return '';
+    })
+    .replace(/[\uE000-\uF8FF\u200D\uFE0F]/g, '')
+    .trim();
+}
+
 import { connectDB } from '../config/db';
 import { logger } from '../utils/logger';
 import User from '../models/user.model';
@@ -3142,107 +3154,200 @@ const translateJsToCpp = (jsCode: string, title: string): string => {
 // Dynamically constructs the ultimate scientific, highly breathable Concept/Code segmented slides.
 const compileSlidesForQuestion = (q: SeedQuestion): any[] => {
   if (q.slides && q.slides.length > 0) {
-    return q.slides;
+    return q.slides.map(slide => ({
+      ...slide,
+      headline: stripEmojis(slide.headline),
+      body: slide.body ? stripEmojis(slide.body) : undefined,
+    }));
   }
 
   const slides: any[] = [];
   const cppCode = translateJsToCpp(q.code, q.title);
+  const topicLower = (q.topic || '').toLowerCase();
+  
+  const isDP = topicLower.includes('dynamic') || topicLower === 'dp';
+  const isGraph = topicLower.includes('graph');
+  const isTheory = topicLower.includes('operating system') || 
+                    topicLower.includes('dbms') || 
+                    topicLower.includes('network') || 
+                    topicLower.includes('system design') || 
+                    topicLower.includes('quant') || 
+                    topicLower.includes('guesstimate') || 
+                    topicLower.includes('case study');
 
-  // CARD 1 — Problem Snapshot
-  slides.push({
-    type: 'intro',
-    headline: `${q.title}: Snapshot`,
-    body: `**Problem Statement**:\n${q.explanation}\n\n💡 **Simplified Analogy**:\n${q.analogy || 'Imagine arranging items systematically to observe running elements.'}\n\n👉 *But wait... brute force recalculates everything. Let's see how to spot the pattern instantly...*`
-  });
+  if (isDP) {
+    // 1. Recognition Card
+    slides.push({
+      type: 'intro',
+      headline: 'Recognition: Spotting DP state',
+      body: stripEmojis(`When you see:
+→ Overlapping decisions or sequential index counting.
+Think:
+→ Express state using indices. Cache optimal choices.
+Key clue:
+→ ${q.analogy || 'Decisions depend only on the immediate previous subproblems.'}`)
+    });
 
-  // CARD 2 — Pattern Recognition
-  slides.push({
-    type: 'explanation',
-    headline: 'Pattern: Spotting the Clues',
-    body: `🔍 **When should this click in interviews?**
-- Contiguous subarray/subsegments → *Think sliding window / Prefix sum*
-- Repeated values or frequency lookups → *Think hashmap*
-- Minimum operations / optimal decisions → *Think greedy / DP*
+    // 2. Key Insight Card
+    slides.push({
+      type: 'explanation',
+      headline: 'Key Insight: DP transition',
+      body: stripEmojis(`The trick:
+→ ${q.intuition || 'Solve from base cases up or memoize top-down.'}
+Why it works:
+→ Prevents redundant exponential recursion calls by caching state results.
+Without this insight:
+→ Standard backtracking times out with exponential complexity.`)
+    });
 
-🎯 **Trigger Words**: \`contiguous\`, \`distinct elements\`, \`longest subset\`, \`running bounds\`.
+    // 3. Code Card
+    slides.push({
+      type: 'code',
+      headline: 'Code: Breathable C++',
+      code: cppCode
+    });
 
-🚫 **False Traps**: Trying to sort the array first, which destroys the original index positioning required for subarray results.`
-  });
+    // 4. Mistake Card
+    slides.push({
+      type: 'explanation',
+      headline: 'Mistake: DP pitfalls',
+      body: stripEmojis(`Common Mistake:
+→ ${q.mistake || 'Incorrect array sizing or out-of-bounds state lookup.'}
+Why it's wrong:
+→ Array bounds check failure or missing base cases on empty inputs.
+Correct thinking:
+→ ${q.prefer || 'Set precise base conditions and verify index ranges.'}`)
+    });
 
-  // CARD 3 — Intuition Card
-  slides.push({
-    type: 'explanation',
-    headline: 'Intuition: The Hook',
-    body: `🧠 **Core Intuition** (NO Code yet):
-${q.intuition || 'Instead of recalculating every window, what if we carry forward useful information? We only care about the best previous state.'}
+  } else if (isGraph) {
+    // 1. Pattern Atlas Card
+    slides.push({
+      type: 'intro',
+      headline: 'Pattern Atlas: Graph traversal',
+      body: stripEmojis(`Pattern:
+→ Node connection state mapping.
+Signs:
+✓ Vertices and edges representing connections
+✓ Level-order BFS or traversal step exploration
+✓ Shortest path or cycles in a grid
+Related:
+→ BFS, DFS, Dijkstra, Topological Sort`)
+    });
 
-💡 *Notice how shifting our perspective makes the exponential search collapse into a linear scanning pass!*
+    // 2. Key Insight Card
+    slides.push({
+      type: 'explanation',
+      headline: 'Key Insight: Node tracking',
+      body: stripEmojis(`The trick:
+→ ${q.intuition || 'Queue neighbors to traverse or backtrack state recursively.'}
+Why it works:
+→ Keeps nodes queued systematically, bounding complexity to O(V + E).
+Without this insight:
+→ Node path validation enters infinite cycle or overflows call stack.`)
+    });
 
-👉 *Let's trace this step-by-step through a visual execution simulation...*`
-  });
+    // 3. Code Card
+    slides.push({
+      type: 'code',
+      headline: 'Code: Breathable C++',
+      code: cppCode
+    });
 
-  // CARD 4 — Visual Walkthrough
-  slides.push({
-    type: 'dryrun',
-    headline: 'Visual: State Walkthrough',
-    body: `Let's dry run this algorithm step-by-step:
+    // 4. Mistake Card
+    slides.push({
+      type: 'explanation',
+      headline: 'Mistake: Traversal bugs',
+      body: stripEmojis(`Common Mistake:
+→ ${q.mistake || 'Marking node visited after popping, not during push.'}
+Why it's wrong:
+→ Duplicate node visits trigger redundant iterations and queue growth.
+Correct thinking:
+→ ${q.prefer || 'Mark visited immediately when pushing to the queue.'}`)
+    });
 
-${q.dryRun || 'Variables and pointers shift dynamically.'}
+  } else if (isTheory) {
+    // CS Theory Layout (3 slides)
+    // 1. Key Insight Card
+    slides.push({
+      type: 'intro',
+      headline: 'Key Insight: Theoretical Model',
+      body: stripEmojis(`The trick:
+→ ${q.intuition || q.explanation || 'Smart resource sharing / process synchronization.'}
+Why it works:
+→ Bypasses concurrency and memory constraints.
+Without this insight:
+→ High latency, thread collisions, or complete state deadlock.`)
+    });
 
-✨ **One Realization Per Screen**: Pointers and running values update step-by-step to bypass redundant evaluations!
+    // 2. Interview Trap Card
+    slides.push({
+      type: 'explanation',
+      headline: 'Interview Trap: Conception',
+      body: stripEmojis(`Question:
+→ ${q.title} follow-up check.
+Most people say:
+→ Textbook definitions or generic summaries.
+Correct answer:
+→ ${q.mistake || 'Show exact low-level resource trade-offs.'}`)
+    });
 
-👉 *Why does this conceptual blueprint hold up mathematically?*`
-  });
+    // 3. Cheat Sheet Card
+    slides.push({
+      type: 'explanation',
+      headline: 'Cheat Sheet: Recall',
+      body: stripEmojis(`${q.topic} Revision:
+• ${q.prefer || 'Identify limits of current state.'}
+• Avoid thread contention.
+• Bounding execution window preserves performance.`)
+    });
 
-  // CARD 5 — Optimal Solution Breakdown
-  slides.push({
-    type: 'complexity',
-    headline: 'Logic: Solution Breakdown',
-    body: `⏱️ **What changed from Brute Force?**
-Instead of re-evaluating every subarray from scratch, we carry forward running sums or sliding bounds in constant time, achieving massive scale performance.
+  } else {
+    // General SDE Coding Layout (4 slides)
+    // 1. Recognition Card
+    slides.push({
+      type: 'intro',
+      headline: 'Recognition: Spotting trigger',
+      body: stripEmojis(`When you see:
+→ ${q.explanation || 'Elements processed sequentially or checked in pairs.'}
+Think:
+→ ${q.intuition || 'Carry forward running sums or sliding bounds.'}
+Key clue:
+→ ${q.analogy || 'Linear scans with smart index tracking.'}`)
+    });
 
-📊 **Footprints**:
-- **Time Complexity**: \`${q.complexity || 'O(N)'}\`
-- **Space Complexity**: \`O(1) in-place auxiliary space\`
+    // 2. Evolution Card
+    slides.push({
+      type: 'explanation',
+      headline: 'Evolution: Solution path',
+      body: stripEmojis(`Brute Force:
+→ Check all combinations or re-evaluate window from scratch.
+Better:
+→ Pre-sort inputs or use hashmap for faster lookups.
+Optimal:
+→ Solve in ${q.complexity || 'O(N)'} time using running pointers or prefix sums.
+Key improvement:
+→ Bypasses duplicate scans in constant auxiliary space.`)
+    });
 
-👉 *Now, let's examine the raw C++ code to lock this in...*`
-  });
+    // 3. Code Card
+    slides.push({
+      type: 'code',
+      headline: 'Code: Breathable C++',
+      code: cppCode
+    });
 
-  // CARD 6 — Code Mode Transition
-  slides.push({
-    type: 'code',
-    headline: 'Code: Breathable C++',
-    body: `Study the clean variable names, layout spacing, and edge cases:`,
-    code: cppCode
-  });
-
-  // CARD 7 — Mistakes & Interview Traps
-  slides.push({
-    type: 'explanation',
-    headline: 'Traps: Mistakes & Pitfalls',
-    body: `⚠️ **Common Traps & Bugs**:
-- ${q.mistake || 'Index out of bounds on empty or single-element inputs.'}
-- *Off-by-one errors on boundary conditions.*
-
-🧠 **Interviewer Mindset & Follow-ups**:
-- *Can this be optimized further in-place?*
-- *What if the array is already sorted?*
-- *Can you solve this with one pointer less?*`
-  });
-
-  // CARD 8 — Compression Revision Card
-  slides.push({
-    type: 'summary',
-    headline: 'Recall: Spaced Repetition',
-    body: `⏱️ **High-Speed Recall Compression**:
-- **5s Recall**: \`${q.topic} frequency lookup\`
-- **20s Recall**: \`${q.prefer || 'Check complement in map before adding.'}\`
-- **1m Recall**: \`${q.explanation} solved in ${q.complexity} time using optimal spacing.\`
-
-🔗 **Pattern Chain / Similar Problems**:
-- *Subarray Sum Equals K*
-- *Longest Substring Without Repeating Characters*`
-  });
+    // 4. Mistake Card
+    slides.push({
+      type: 'explanation',
+      headline: 'Mistake: Edge traps',
+      body: stripEmojis(`Common Mistake:
+→ ${q.mistake || 'Forgetting boundary cases on empty or single-element inputs.'}
+Why it's wrong:
+→ Index out-of-bounds or division-by-zero crashes program.
+Correct thinking:
+→ ${q.prefer || 'Always validate sizes and verify boundaries first.'}`)
+    });
+  }
 
   return slides;
 };
@@ -3530,8 +3635,8 @@ const runDSAKnowledgeSeeder = async () => {
             const compiledSlides = compileSlidesForQuestion(q);
             const richSlides = compiledSlides.map((slide, idx) => ({
               type: slide.type,
-              headline: slide.headline,
-              body: slide.body,
+              headline: stripEmojis(slide.headline),
+              body: slide.body ? stripEmojis(slide.body) : undefined,
               code: slide.code,
               blocks: slide.blocks || [],
               slideIndex: idx,
@@ -3545,12 +3650,12 @@ const runDSAKnowledgeSeeder = async () => {
               _id: generatedCardId,
               title: q.title,
               topic: q.topic,
-              explanation: q.explanation,
+              explanation: stripEmojis(q.explanation),
               code: q.code,
               difficulty: q.difficulty,
               complexity: q.complexity,
               tags: q.tags,
-              examples: q.examples,
+              examples: q.examples ? q.examples.map(stripEmojis) : [],
               folderId: subfolder._id,
               createdBy: adminId,
               visibility: 'public',

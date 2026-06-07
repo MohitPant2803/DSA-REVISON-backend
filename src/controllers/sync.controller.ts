@@ -12,6 +12,7 @@ import Playlist from '../models/playlist.model';
 import UserQuestionProgress from '../models/userQuestionProgress.model';
 import Progress from '../models/progress.model';
 import ProcessedMutation from '../models/processedMutation.model';
+import User from '../models/user.model';
 import { AuthRequest } from './playlist.controller';
 import { updateUserQuestionProgress } from '../services/userQuestionProgress.service';
 import { updateProgressService, reorderLikesService, registerLoopService, updateResumeStateService } from '../services/progress.service';
@@ -37,6 +38,16 @@ const CURRENT_DB_VERSION = 'striver-sde-sheet-v4';
 
 export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userId = req.user!._id;
+  const { expoPushToken } = req.query;
+  if (expoPushToken && typeof expoPushToken === 'string') {
+    await User.findByIdAndUpdate(userId, {
+      $set: { expoPushToken }
+    }).catch((err) => {
+      console.error(`[Sync Engine] Failed to update expoPushToken for user ${userId}:`, err.message);
+    });
+    console.log(`[Sync Engine] Automatically updated expoPushToken for user ${req.user!.email} during sync`);
+  }
+
   const sinceRevisionStr = req.query.sinceRevision as string;
   const allowRemoteDestructiveSync = (req.user as any)?.preferences?.allowRemoteDestructiveSync === true;
   

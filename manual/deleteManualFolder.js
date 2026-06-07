@@ -8,7 +8,7 @@ async function run() {
   }
 
   // Define the target folder ID we want to delete
-  const targetFolderId = "1cc1ca0d-7165-47ba-841f-9a80e4974484"; // The "System Design Patterns" folder
+  const targetFolderId = "4b9341e1-1e8d-49c0-84ef-947ffab8963f"; // The "System Design Patterns" folder
 
   console.log('Connecting to MongoDB...');
   await mongoose.connect(mongoUri, { dbName: 'test' });

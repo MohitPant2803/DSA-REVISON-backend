@@ -39,17 +39,17 @@ async function run() {
     throw new Error('System admin user not found. Please run npm run seed:dsa first.');
   }
 
-  // Define new manual folder
+  // Define new manual folder: node manual/createManualFolder.js
   const folderData = {
     _id: crypto.randomUUID(), // Generates standard UUIDv4 string
-    title: "System Design Patterns",
-    description: "Master microservices, load balancing, and replication strategies.",
-    icon: "git-branch",
+    title: "Trial 2",
+    description: "hehehe2",
+    icon: "folder", // Icons available: "folder" (Default), "layers", "graphs", "dp", "database", "book", "code", "brain"
     color: "#ec4899",
     createdBy: adminUser._id,
     visibility: "public",
     order: 8,
-    parentFolderId: null // Root folder
+    parentFolderId: null
   };
 
   // Insert and save
