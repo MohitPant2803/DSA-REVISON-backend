@@ -42,14 +42,14 @@ async function run() {
   // Define new manual folder: node manual/createManualFolder.js
   const folderData = {
     _id: crypto.randomUUID(), // Generates standard UUIDv4 string
-    title: "Trial 2",
-    description: "hehehe2",
-    icon: "folder", // Icons available: "folder" (Default), "layers", "graphs", "dp", "database", "book", "code", "brain"
-    color: "#ec4899",
+    title: "SQL 50", // Folder Title 
+    description: "",
+    icon: "brain", // Icons available: "folder" (Default), "layers", "graphs", "dp", "database", "book", "code", "brain"
+    color: "#ec4848",
     createdBy: adminUser._id,
     visibility: "public",
-    order: 8,
-    parentFolderId: null
+    order: 2,
+    parentFolderId: "fe5acf61-70c0-509a-a8b3-0339ae15ab79",
   };
 
   // Insert and save

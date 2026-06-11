@@ -284,7 +284,7 @@ export const deleteFolderById = async (
   folderId: string,
   userId: Types.ObjectId,
   userRole: UserRole
-): Promise<void> => {
+): Promise<string[]> => {
   if (!isValidId(folderId)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid folder ID');
   }
@@ -296,11 +296,46 @@ export const deleteFolderById = async (
 
   const allowed = await canManageResource(userId, userRole, folder.createdBy);
   if (!allowed) {
-    throw new ApiError(httpStatus.FORBIDDEN, 'You are not authorized to delete this folder');
+    throw new ApiError(httpStatus.FORBIDDEN, 'You do not have access to this folder');
   }
 
-  await RevisionCard.deleteMany({ folderId: folder._id });
-  await folder.deleteOne();
+  // Fetch all folders to build the descendant tree in-memory
+  const allFolders = await Folder.find({}).select('_id parentFolderId').lean();
+  const childrenMap = new Map<string, string[]>();
+  allFolders.forEach(f => {
+    if (f.parentFolderId) {
+      const pId = f.parentFolderId.toString();
+      const existing = childrenMap.get(pId) || [];
+      existing.push(f._id.toString());
+      childrenMap.set(pId, existing);
+    }
+  });
+
+  const descendants: string[] = [];
+  const queue = [folder._id.toString()];
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    descendants.push(curr);
+    const children = childrenMap.get(curr) || [];
+    for (const child of children) {
+      if (!descendants.includes(child) && !queue.includes(child)) {
+        queue.push(child);
+      }
+    }
+  }
+
+  // Delete all revision cards associated with any of these folders
+  await RevisionCard.deleteMany({
+    $or: [
+      { folderId: { $in: descendants } },
+      { rootFolderId: { $in: descendants } }
+    ]
+  });
+
+  // Delete all folders in the descendant list
+  await Folder.deleteMany({ _id: { $in: descendants } });
+
+  return descendants;
 };
 
 export const reorderFolderCards = async (

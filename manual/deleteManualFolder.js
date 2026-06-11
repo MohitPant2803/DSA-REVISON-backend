@@ -7,8 +7,8 @@ async function run() {
     throw new Error('MONGO_URI is missing from your .env file!');
   }
 
-  // Define the target folder ID we want to delete
-  const targetFolderId = "4b9341e1-1e8d-49c0-84ef-947ffab8963f"; // The "System Design Patterns" folder
+  // Define the target folder ID we want to delete  node manual/deleteManualFolder.js
+  const targetFolderId = "2e358313-2535-4cb6-9a4e-cda42c551c84"; // The "System Design Patterns" folder
 
   console.log('Connecting to MongoDB...');
   await mongoose.connect(mongoUri, { dbName: 'test' });

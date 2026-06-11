@@ -461,12 +461,14 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
               const { folderId } = payload;
               if (folderId) {
                 const nextRev = await getNextUserRevision(userId, session);
-                await deleteFolderById(folderId, new mongoose.Types.ObjectId(userId), role);
-                await DeletedEntity.findOneAndUpdate(
-                  { userId, entityId: folderId, entityType: 'folder' },
-                  { $set: { revision: nextRev, deletedAt: new Date() } },
-                  { upsert: true, new: true, session }
-                );
+                const deletedFolderIds = await deleteFolderById(folderId, new mongoose.Types.ObjectId(userId), role);
+                for (const dId of deletedFolderIds) {
+                  await DeletedEntity.findOneAndUpdate(
+                    { userId, entityId: dId, entityType: 'folder' },
+                    { $set: { revision: nextRev, deletedAt: new Date() } },
+                    { upsert: true, new: true, session }
+                  );
+                }
               }
               break;
             }
