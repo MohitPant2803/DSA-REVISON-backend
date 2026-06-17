@@ -328,6 +328,22 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
               break;
             }
 
+            case 'UPDATE_STREAK': {
+              const { streakCount, maxStreakCount, lastCompletedDate } = payload;
+              const user = await User.findById(userId).session(session);
+              if (user) {
+                const incomingDate = lastCompletedDate ? new Date(lastCompletedDate) : new Date();
+                const currentDate = user.lastCompletedDate ? new Date(user.lastCompletedDate) : new Date(0);
+                if (incomingDate >= currentDate) {
+                  user.streakCount = Math.max(user.streakCount || 0, streakCount || 0);
+                  user.maxStreakCount = Math.max(user.maxStreakCount || 0, maxStreakCount || 0, user.streakCount);
+                  user.lastCompletedDate = incomingDate;
+                  await user.save({ session });
+                }
+              }
+              break;
+            }
+
             case 'TOGGLE_FAVORITE': {
               const { cardId, value } = payload;
               if (cardId) {

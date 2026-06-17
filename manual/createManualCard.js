@@ -51,123 +51,123 @@ async function run() {
   // ==========================================
   // CONFIGURATION: Set card details and slides
   // ==========================================
-  const targetFolderId = "8fa92a37-80a0-5390-921d-d62d70236187"; // The subfolder where the card will live
+  const targetFolderId = "d3f0c187-44fc-459d-83fb-17989c23ff9f"; // The subfolder where the card will live
   const cardId = crypto.randomUUID(); // Fresh new ID for the card
 
 const cardData = {
     _id: cardId,
-    title:"Estimate the Number of Instagram Users in India as of 2025 r", // Card Title
-    topic: "Guesstimates", // Card Topic
-    difficulty: "Easy ", // "Easy" | "Medium" | "Hard"
-    complexity: "", // Time Complexity
-    explanation: "**Problem Statement**:\nEstimate the `number of Instagram users in India as of 2025`.\n\n💡 **Simplified Analogy**:\nInstead of directly guessing the number of Instagram users, we first estimate how many people have internet access and then determine Instagram adoption across different age groups.",  
-    folderId: targetFolderId, // Automatically matches the target folder
+    title: "Pair Products",
+    topic: "Number Theory",
+    difficulty: "Easy",
+    complexity: "O(N²)",
+    explanation: "**Problem statement**\nCompute the product of |Ai-Aj| over all pairs i<j modulo m.",
+
+    folderId: targetFolderId,
     createdBy: adminUser._id,
     visibility: "public",
-    order: 0, // Card sorting weight
+    order: 0,
     isDeleted: false,
-    
-    // 2. Define the learning Slides array manually (Template containing all slide types)
-    slides: [
-      {
-        type: "intro",
-        headline: "",
-        body: "",
-        blocks: []
-      },
-      {
-        type: "explanation",
-        headline: "💡 The Mental Model",
-        Body: "**Mental Model: Internet Users × Social Media Adoption**\n\nInstagram users can be estimated by:\n\n1. Estimating India's population.\n2. Determining the percentage with `internet access`.\n3. Segmenting the population by `age groups`.\n4. Estimating Instagram penetration within each age group.\n\nAdding users across all age groups gives the final estimate.",   
-        blocks: []
-      },
-      {
-        type: "explanation",
-        headline: "🧠 Core Intuition & Approach",
-        body:"**Core Intuition**:\nNot everyone in the population can be considered an Instagram user. The first filter is `internet access`, since Instagram requires internet connectivity.\nThe internet-enabled population can then be segmented into different `age groups`, each having a different likelihood of using Instagram. Teenagers and young adults are typically more active on social media, while children and older adults have lower adoption rates.\nBy estimating Instagram penetration across each age group and combining their contributions, we can estimate the total number of Instagram users in India.",  
-        blocks: []
-      },
-      {
-        type: "explanation",
-headline: "⚠️ The Trap vs The Clean Way",
-body: "❌ **Common Trap**:\nAssuming a random percentage of India's population uses Instagram.\n\n✅ **Preferred Approach**:\nFirst estimate the `internet-enabled population`, then apply age-wise Instagram penetration rates.",
-blocks: [] 
-      },
-      {
-type: "dryrun",
-headline: "🔍 Dry Run Trace",
-body: "",
-steps:[
-"**Step 1:** Start with `India's Population = 150 Crore`.\n\nAssume that only `60%` of the population has internet access, giving an internet-enabled population of `90 Crore`.",
-"**Step 2:** Divide the population into age groups:\n\n• `0–14 Years = 20%`\n• `14–18 Years = 15%`\n• `18–50 Years = 50%`\n• `50+ Years = 15%`."
-], 
-blocks: [] 
-   },
-  {
-type: "dryrun",
-headline: "🔍 Dry Run Trace",
-body: "",
-steps:[
-  "**Step 3:** Estimate Instagram adoption within each age group:\n\n• `0–14 Years → 20%`\n• `14–18 Years → 80%`\n• `18–50 Years → 95%`\n• `50+ Years → 40%`.",
-"**Step 4:** Compute the weighted Instagram penetration:\n\n`(0.2×0.2 + 0.15×0.8 + 0.5×0.95 + 0.15×0.4) = 0.695`."
-], 
-blocks: [] 
-   },
-   {
-type: "dryrun",
-headline: "🔍 Dry Run Trace",
-body: "",
-steps:[
-"**Step 5:** Multiply the weighted penetration by the internet-enabled population:\n\n`150 × 0.6 × 0.695 ≈ 63 Crore Users`.",
-"**Step 6:** Therefore, the estimated number of Instagram users in India is approximately `63 Crore`."
-], 
-blocks: [] 
-   },
-   {
-type: "explanation",
-headline: "📊 Assumptions Used",
-body: "**Population**\n\n• `India Population = 150 Crore`\n• `Internet Access = 60%`\n• `No Internet Access = 40%`\n\n**Age Distribution**\n\n• `0–14 Years = 20%`\n• `14–18 Years = 15%`\n• `18–50 Years = 50%`\n• `50+ Years = 15%`",
-blocks: []
-}, 
-{
-type: "explanation",
-headline: "👶 Age Group 0–14 Years",
-body: "Most children in this age group do not own personal smartphones.\n\nAssume only `20%` of this age group actively uses Instagram.\n\nInstagram Penetration = `20%`.",
-blocks: []
-}, 
-{
-type: "explanation",
-headline: "🧑‍🎓 Age Group 14–18 Years",
-body: "Teenagers are among the most active social media users.\n\nAssume approximately `80%` of this age group has an Instagram account.\n\nInstagram Penetration = `80%`.",
-blocks: []
-}, 
-{
-type: "explanation",
-headline: "👨‍💼 Age Group 18–50 Years",
-body: "This segment includes students, professionals, homemakers, and digitally connected adults.\n\nAssume approximately `95%` of internet users in this segment use Instagram.\n\nInstagram Penetration = `95%`.",
-blocks: []
-},
-{
-type: "explanation",
-headline: "👴 Age Group 50+ Years",
-body: "Older adults are comparatively less active on social media.\n\nAssume around `40%` of this age group uses Instagram.\n\nInstagram Penetration = `40%`.",
-blocks: []
-}, 
-{
-type: "explanation",
-headline: "🧮 Calculation",
-body: "`Total Instagram Users = 150 Cr × 0.6 × (0.2×0.2 + 0.15×0.8 + 0.5×0.95 + 0.15×0.4)`\n\n`= 150 Cr × 0.6 × 0.695`\n\n`≈ 63 Crore Users`",
-blocks: []
-},
-{
-type: "explanation",
-headline: "✅ Final Estimate",
-body: "🎯 **Estimated Instagram Users in India (2025)**\n\n`≈ 63 Crore Users`\n\nThis estimate is based on:\n\n• `India Population`\n• `Internet Penetration`\n• `Age Distribution`\n• `Instagram Adoption Across Age Groups`",
-blocks: []
-}
-]
-};
 
+    slides: [
+        {
+            type: "intro",
+            headline: "",
+            body: "",
+            blocks: []
+        },
+        {
+            type: "explanation",
+            headline: "💡 Core Idea",
+            body: "👉 If two numbers have the same remainder modulo m, their difference is divisible by m.\n👉 Then the entire product becomes 0 modulo m.\n👉 By Pigeonhole Principle, if N>m, answer is always 0.\n👉 Otherwise brute force all pairs.",
+            blocks: []
+        },
+        {
+            type: "explanation",
+            headline: "💡 Mathematical Insight",
+            body: "👉 Only values modulo m matter.\n👉 N≤m implies N≤1000 since m≤1000.\n👉 Hence O(N²) pair iteration is feasible.\n👉 Multiply pair differences modulo m.",
+            blocks: []
+        },
+        {
+            type: "code",
+            headline: "Code: C++ Implementation",
+            body: "",
+            code: `#include<bits/stdc++.h>
+using namespace std;
+int m=1e9+7;
+using ll=long long;
+
+void solve(){
+    int n,mod;
+    cin>>n>>mod;
+
+    vector<ll> a(n);
+
+    for(int i=0;i<n;i++) cin>>a[i];
+
+    if(n>mod){
+        cout<<0<<"\n";
+        return;
+    }
+
+    ll ans=1;
+
+    for(int i=0;i<n;i++){
+        for(int j=i+1;j<n;j++){
+            ans=(ans*(abs(a[i]-a[j])%mod))%mod;
+        }
+    }
+
+    cout<<ans<<"\n";
+}
+
+int main(){
+    ios_base::sync_with_stdio(0);
+    cin.tie(0); cout.tie(0);
+
+    int t=1;
+
+    while(t--){
+        solve();
+    }
+}`,
+            blocks: []
+        },
+        {
+            type: "code",
+            headline: "Code: Python Implementation",
+            body: "",
+            code: `def solve():
+    n,mod=map(int,input().split())
+    a=list(map(int,input().split()))
+
+    if n>mod:
+        print(0)
+        return
+
+    ans=1
+
+    for i in range(n):
+        for j in range(i+1,n):
+            ans=(ans*(abs(a[i]-a[j])%mod))%mod
+
+    print(ans)
+
+solve()`,
+            blocks: []
+        },
+        {
+            type: "dryrun",
+            headline: "🔍 Learnings",
+            body: "",
+            steps: [
+                "If N>m, answer is immediately 0.",
+                "Equal remainders modulo m force a zero product.",
+                "Otherwise brute force all pairs modulo m."
+            ],
+            blocks: []
+        }
+    ]
+};
   // 3. Resolve path metadata from the folderId
   console.log(`Resolving folder pathing metadata for folder: "${targetFolderId}"`);
   const pathMetadata = await resolveFolderMetadata(targetFolderId, db);

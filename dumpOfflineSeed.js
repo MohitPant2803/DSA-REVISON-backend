@@ -38,10 +38,19 @@ async function run() {
   }));
   console.log(`Fetched ${revisionCards.length} revision cards.`);
 
+  console.log('Fetching senior quotes...');
+  const rawQuotes = await db.collection('seniorquotes').find({}).toArray();
+  const seniorQuotes = rawQuotes.map(q => ({
+    ...q,
+    _id: q._id.toString(),
+  }));
+  console.log(`Fetched ${seniorQuotes.length} senior quotes.`);
+
   const offlineSeed = {
     folders,
     playlists,
     revisionCards,
+    seniorQuotes,
     dbVersion: `striver-sde-sheet-${Date.now()}`, // Dynamic timestamp triggers automatic phone cache refresh on APK rebuilds
     timestamp: new Date().toISOString(),
   };

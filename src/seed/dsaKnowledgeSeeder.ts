@@ -183,9 +183,6 @@ interface SeedQuestion {
 // 1. Defined Sheet Configurations
 const SHEET_CONFIGS = [
   { title: 'Striver SDE Sheet', icon: 'layers', color: '#7C3AED', description: 'The legendary 180 curated questions for top tier product company interviews.' },
-  { title: 'Blind 75', icon: 'brain', color: '#EF4444', description: 'The gold standard 75 questions that build core conceptual mastery.' },
-  { title: 'NeetCode 150', icon: 'code', color: '#10B981', description: 'The ultimate structured roadmap containing 150 vital interview patterns.' },
-  { title: 'Grind 75', icon: 'dp', color: '#3B82F6', description: 'Prioritized by frequency and conceptual depth.' },
 ];
 
 // Helper to match custom subfolder titles per sheet

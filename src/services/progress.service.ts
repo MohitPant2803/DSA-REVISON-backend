@@ -21,6 +21,37 @@ const isSameDay = (date1: Date, date2: Date) => {
   );
 };
 
+export function updateUserStreak(user: any): boolean {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  let updated = false;
+  if (user.lastCompletedDate) {
+    if (isSameDay(user.lastCompletedDate, yesterday)) {
+      user.streakCount += 1;
+      updated = true;
+    } else if (!isSameDay(user.lastCompletedDate, today)) {
+      user.streakCount = 1;
+      updated = true;
+    }
+  } else {
+    user.streakCount = 1;
+    updated = true;
+  }
+
+  if (!user.maxStreakCount) {
+    user.maxStreakCount = 0;
+  }
+  if (user.streakCount > user.maxStreakCount) {
+    user.maxStreakCount = user.streakCount;
+    updated = true;
+  }
+
+  user.lastCompletedDate = today;
+  return updated;
+}
+
 const cardPopulate = {
   path: 'revisionCardId',
   select: 'title topic difficulty complexity tags explanation code image examples folderId',
@@ -113,20 +144,7 @@ export const updateProgressService = async (userId: string, data: ProgressUpdate
 
     const user = await User.findById(userId);
     if (user) {
-      const today = new Date();
-      const yesterday = new Date();
-      yesterday.setDate(today.getDate() - 1);
-
-      if (user.lastCompletedDate) {
-        if (isSameDay(user.lastCompletedDate, yesterday)) {
-          user.streakCount += 1;
-        } else if (!isSameDay(user.lastCompletedDate, today)) {
-          user.streakCount = 1;
-        }
-      } else {
-        user.streakCount = 1;
-      }
-      user.lastCompletedDate = today;
+      updateUserStreak(user);
       await user.save();
     }
   }
@@ -137,6 +155,10 @@ export const updateProgressService = async (userId: string, data: ProgressUpdate
       const today = new Date();
       if (!isSameDay(user.lastCompletedDate, today)) {
         user.streakCount = Math.max(1, user.streakCount);
+        if (!user.maxStreakCount) {
+          user.maxStreakCount = 0;
+        }
+        user.maxStreakCount = Math.max(user.maxStreakCount, user.streakCount);
         user.lastCompletedDate = today;
         await user.save();
       }
@@ -241,6 +263,7 @@ export const getDashboardStatsService = async (userId: string) => {
 
   return {
     streakCount: user?.streakCount ?? 0,
+    maxStreakCount: user?.maxStreakCount ?? 0,
     lastCompletedDate: user?.lastCompletedDate,
     totalSwipes: user?.totalSwipes ?? 0,
     totalScrolls: user?.totalScrolls ?? 0,

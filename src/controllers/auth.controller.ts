@@ -55,6 +55,14 @@ export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
   }
 
   if (req.user) {
+    const User = require('../models/user.model').default;
+    const userDoc = await User.findById(req.user._id);
+    if (userDoc) {
+      const { updateUserStreak } = require('../services/progress.service');
+      updateUserStreak(userDoc);
+      await userDoc.save();
+      req.user = userDoc;
+    }
     await ensureUserSystemPlaylists(req.user._id.toString());
   }
 

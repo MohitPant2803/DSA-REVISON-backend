@@ -9,6 +9,7 @@ export interface IUser extends Document {
   role: 'user' | 'admin' | 'superadmin';
   authProvider: string;
   streakCount: number;
+  maxStreakCount: number;
   totalSwipes: number;
   totalScrolls: number;
   preferences: Record<string, any>;
@@ -44,6 +45,7 @@ const UserSchema = new Schema<IUser>(
       default: 'google'
     },
     streakCount: { type: Number, default: 0 },
+    maxStreakCount: { type: Number, default: 0 },
     totalSwipes: { type: Number, default: 0 },
     totalScrolls: { type: Number, default: 0 },
     lastCompletedDate: { type: Date },

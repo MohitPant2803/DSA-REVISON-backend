@@ -10,7 +10,7 @@ async function run() {
   // ==========================================
   // CONFIGURATION: Set card ID to delete  node manual/deleteManualCard.js
   // ==========================================
-  const targetCardId = "c56e026b-173a-4cdd-8e2c-6a7bb1fa1841"; // The ID of the card you want to delete
+  const targetCardId = "aa131397-00f7-4746-85fa-65b6b1360846"; // The ID of the card you want to delete
 
   console.log('Connecting to MongoDB...');
   await mongoose.connect(mongoUri, { dbName: 'test' });
