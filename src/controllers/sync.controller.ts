@@ -49,7 +49,7 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
   }
 
   const sinceRevisionStr = req.query.sinceRevision as string;
-  const allowRemoteDestructiveSync = (req.user as any)?.preferences?.allowRemoteDestructiveSync === true;
+  const allowRemoteDestructiveSync = (req.user as any)?.preferences?.allowRemoteDestructiveSync !== false;
   
   if (sinceRevisionStr !== undefined) {
     const sinceRevision = Number(sinceRevisionStr || 0);

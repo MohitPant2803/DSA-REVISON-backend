@@ -51,123 +51,73 @@ async function run() {
   // ==========================================
   // CONFIGURATION: Set card details and slides
   // ==========================================
-  const targetFolderId = "d3f0c187-44fc-459d-83fb-17989c23ff9f"; // The subfolder where the card will live
+  const targetFolderId = "8fa92a37-80a0-5390-921d-d62d70236187"; // The subfolder where the card will live
   const cardId = crypto.randomUUID(); // Fresh new ID for the card
 
 const cardData = {
     _id: cardId,
-    title: "Pair Products",
-    topic: "Number Theory",
-    difficulty: "Easy",
-    complexity: "O(N²)",
-    explanation: "**Problem statement**\nCompute the product of |Ai-Aj| over all pairs i<j modulo m.",
-
-    folderId: targetFolderId,
+    title: "Routers Sold in India Per Year", // Card Title
+    topic: "Guesstimates", // Card Topic
+    difficulty: "Medium", // "Easy" | "Medium" | "Hard"
+    complexity: "", // Time Complexity
+    explanation: "**Problem Statement**:\nEstimate the number of routers sold in India per year.\n\n💡 **Simplified Analogy**:\nImagine routers like internet entry points. Homes, offices, banks, cafes, restaurants, and malls need them, so we estimate demand segment-wise and adjust for router lifespan.",
+    folderId: targetFolderId, // Automatically matches the target folder
     createdBy: adminUser._id,
     visibility: "public",
-    order: 0,
+    order: 0, // Card sorting weight
     isDeleted: false,
-
+    
+    // 2. Define the learning Slides array manually (Template containing all slide types)
     slides: [
-        {
-            type: "intro",
-            headline: "",
-            body: "",
-            blocks: []
-        },
-        {
-            type: "explanation",
-            headline: "💡 Core Idea",
-            body: "👉 If two numbers have the same remainder modulo m, their difference is divisible by m.\n👉 Then the entire product becomes 0 modulo m.\n👉 By Pigeonhole Principle, if N>m, answer is always 0.\n👉 Otherwise brute force all pairs.",
-            blocks: []
-        },
-        {
-            type: "explanation",
-            headline: "💡 Mathematical Insight",
-            body: "👉 Only values modulo m matter.\n👉 N≤m implies N≤1000 since m≤1000.\n👉 Hence O(N²) pair iteration is feasible.\n👉 Multiply pair differences modulo m.",
-            blocks: []
-        },
-        {
-            type: "code",
-            headline: "Code: C++ Implementation",
-            body: "",
-            code: `#include<bits/stdc++.h>
-using namespace std;
-int m=1e9+7;
-using ll=long long;
-
-void solve(){
-    int n,mod;
-    cin>>n>>mod;
-
-    vector<ll> a(n);
-
-    for(int i=0;i<n;i++) cin>>a[i];
-
-    if(n>mod){
-        cout<<0<<"\n";
-        return;
-    }
-
-    ll ans=1;
-
-    for(int i=0;i<n;i++){
-        for(int j=i+1;j<n;j++){
-            ans=(ans*(abs(a[i]-a[j])%mod))%mod;
-        }
-    }
-
-    cout<<ans<<"\n";
-}
-
-int main(){
-    ios_base::sync_with_stdio(0);
-    cin.tie(0); cout.tie(0);
-
-    int t=1;
-
-    while(t--){
-        solve();
-    }
-}`,
-            blocks: []
-        },
-        {
-            type: "code",
-            headline: "Code: Python Implementation",
-            body: "",
-            code: `def solve():
-    n,mod=map(int,input().split())
-    a=list(map(int,input().split()))
-
-    if n>mod:
-        print(0)
-        return
-
-    ans=1
-
-    for i in range(n):
-        for j in range(i+1,n):
-            ans=(ans*(abs(a[i]-a[j])%mod))%mod
-
-    print(ans)
-
-solve()`,
-            blocks: []
-        },
-        {
-            type: "dryrun",
-            headline: "🔍 Learnings",
-            body: "",
-            steps: [
-                "If N>m, answer is immediately 0.",
-                "Equal remainders modulo m force a zero product.",
-                "Otherwise brute force all pairs modulo m."
-            ],
-            blocks: []
-        }
+      {
+        type: "intro",
+        headline: "",
+        body: "",
+        blocks: []
+      },
+      {
+        type: "explanation",
+        headline: "💡 The Mental Model",
+        body: "**Clarifications & Scope**:\n1. We estimate routers sold in India in one year.\n2. Buyers include households, offices, banks, restaurants, cafes, and malls.\n3. Since routers last multiple years, total router demand is divided by average router life.",
+        blocks: []
+      },
+      {
+        type: "explanation",
+        headline: "🧠 Core Intuition & Approach",
+        body: "**Intuition: Segment-Based Replacement Estimation**:\nInstead of guessing router sales directly, we estimate router ownership across major user segments. Then we divide by average router life to get yearly sales.\n`Annual Router Sales = Total Routers ÷ Router Life`",
+        blocks: []
+      },
+      {
+        type: "explanation",
+        headline: "Assumptions",
+        body: " **User Segments:**\nAverage router life = `5 years`.\nHouseholds = `37.5 Cr`.\nOnly upper-income households, around `30%`, are assumed to buy routers.\nOffices and banks need around `20 routers` each.\nRestaurants, cafes, and malls are also included.",
+        blocks: []
+      },
+      {
+        type: "dryrun",
+        headline: "🧮Numerical Estimation",
+        body: "`",
+        steps: [
+ "**Step 1: Households:**\nTotal households = `37.5 Cr`\nRouter-owning households = `30%`\nAverage router life = `5 years`\nCalculation:\n`37.5 × 30% ÷ 5`\n= **2.25 Cr routers/year**",
+"**Step 2: Offices and Banks:**\nOffices = `30 lakh`\nBanks = `40 lakh`\nRouters per office/bank = `20`\nAverage life = `5 years`\nCalculation:\n`(30L + 40L) × 20 ÷ 5`\n= **2.8 Cr routers/year**"
+],
+blocks: []
+    },
+    {
+        type: "dryrun",
+        headline: "🧮Numerical Estimation",
+        body: "`",
+        steps: [
+"**Step 3: Restaurants, Cafes and Malls:**\nMalls = `5000`, with `100 routers` each\nRestaurants + cafes = `1.5 Cr`, with `40%` router usage\nAverage life = `5 years`\nCalculation:\n`(5000×100 + 1.5Cr×40%) ÷ 5`\n≈ **0.13 Cr routers/year**",
+"**Step 4: Final Total:**\nHouseholds = `2.25 Cr`\nOffices and banks = `2.8 Cr`\nRestaurants, cafes and malls = `0.13 Cr`\nTotal = `2.25 + 2.8 + 0.13`\n= **5.18 Cr routers/year**"
+        ],
+        blocks: []
+      },
     ]
-};
+  };
+
+
+
   // 3. Resolve path metadata from the folderId
   console.log(`Resolving folder pathing metadata for folder: "${targetFolderId}"`);
   const pathMetadata = await resolveFolderMetadata(targetFolderId, db);

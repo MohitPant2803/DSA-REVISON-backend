@@ -15,20 +15,20 @@ async function run() {
   const roots = folders.filter(f => !f.parentFolderId);
   
   for (const root of roots) {
-    console.log(`Root: [${root.title}] (ID: ${root._id})`);
+    console.log(`Root: [${root.title}] (ID: ${root._id}, Icon: ${root.icon}, Color: ${root.color})`);
     
     // Find direct children
     const children = folders.filter(f => f.parentFolderId && f.parentFolderId.toString() === root._id.toString());
     for (const child of children) {
-      console.log(`  └─ Child: [${child.title}] (ID: ${child._id})`);
+      console.log(`  └─ Child: [${child.title}] (ID: ${child._id}, Icon: ${child.icon}, Color: ${child.color})`);
       
       const grandchildren = folders.filter(f => f.parentFolderId && f.parentFolderId.toString() === child._id.toString());
       for (const gc of grandchildren) {
-        console.log(`      └─ Grandchild: [${gc.title}] (ID: ${gc._id})`);
+        console.log(`      └─ Grandchild: [${gc.title}] (ID: ${gc._id}, Icon: ${gc.icon}, Color: ${gc.color})`);
         
         const ggc = folders.filter(f => f.parentFolderId && f.parentFolderId.toString() === gc._id.toString());
         for (const g of ggc) {
-          console.log(`          └─ Great-grandchild: [${g.title}] (ID: ${g._id})`);
+          console.log(`          └─ Great-grandchild: [${g.title}] (ID: ${g._id}, Icon: ${g.icon}, Color: ${g.color})`);
         }
       }
     }
