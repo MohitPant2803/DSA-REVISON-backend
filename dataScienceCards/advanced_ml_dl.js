@@ -105,7 +105,7 @@ module.exports = [
       'A: t-SNE (t-Distributed Stochastic Neighbor Embedding) is a non-linear dimensionality reduction technique used for high-dimensional data visualization, as it preserves local neighborhoods.'
     ],
     bullets5: [
-      't-SNE is strictly for visualization. It is computationally expensive ($O(N^2)$) and does not output a projection function that can be applied to new test data.'
+      't-SNE is strictly for visualization. It is computationally expensive (`O(N^2)`) and does not output a projection function that can be applied to new test data.'
     ]
   },
 
@@ -122,7 +122,7 @@ module.exports = [
       'Out-Of-Bag (OOB): Evaluating models on left-out bootstrap samples, bypassing the need for a separate validation set.'
     ],
     bullets2: [
-      'Generate $B$ bootstrap samples from the training set by sampling with replacement.',
+      'Generate `B` bootstrap samples from the training set by sampling with replacement.',
       'Train a separate base model (typically deep decision trees) on each sample in parallel.',
       'Combine predictions: majority vote for classification, average for regression.'
     ],
@@ -131,7 +131,7 @@ module.exports = [
     ],
     bullets4: [
       'Q: "Why does bagging reduce variance?"',
-      'A: Averaging predictions from multiple independent, high-variance models reduces the variance of the average by a factor of $B$ (if models are uncorrelated).'
+      'A: Averaging predictions from multiple independent, high-variance models reduces the variance of the average by a factor of `B` (if models are uncorrelated).'
     ],
     bullets5: [
       'Base Estimator Choice: Bagging works best with high-variance, unstable base estimators (e.g. unpruned decision trees). It adds no value to low-variance models like linear regression.'
@@ -172,13 +172,13 @@ module.exports = [
     type: 'theory',
     bullets1: [
       'Definition: Ensemble model that combines bagging with random feature selection to decorrelate base decision trees.',
-      'Feature Randomness: Each split in a tree is chosen from a random subset of features (typically $\\sqrt{D}$ features).',
+      'Feature Randomness: Each split in a tree is chosen from a random subset of features (typically `√(D)` features).',
       'Student Shorthand: Decorrelating the trees reduces the variance of the average prediction compared to standard bagging.'
     ],
     bullets2: [
       'Create a bootstrap sample of the training set.',
       'Grow a decision tree on the sample. At each split, select a random subset of features to find the best split.',
-      'Repeat $B$ times and average predictions.'
+      'Repeat `B` times and average predictions.'
     ],
     bullets3: [
       'Analogy: Instead of one expert analyzing a problem, you ask a forest of experts who each look at different features of the problem.'
@@ -203,8 +203,8 @@ module.exports = [
       'Speed: Uses parallel split finding, block compression, and cache-aware structures.'
     ],
     bullets2: [
-      'Objective Function: Optimize regularized loss: \\(\\mathcal{L}^{(t)} \\approx \\sum [g_i f_t(x_i) + \\frac{1}{2} h_i f_t^2(x_i)] + \\Omega(f_t)\\).',
-      'Calculate first-order gradient ($g_i$) and second-order gradient ($h_i$, Hessian) of the loss.',
+      'Objective Function: Optimize regularized loss: `L^{(t)} ≈ ∑ [g_i f_t(x_i) + 1 / 2 h_i f_t^2(x_i)] + Ω(f_t)`.',
+      'Calculate first-order gradient (`g_i`) and second-order gradient (`h_i`, Hessian) of the loss.',
       'Build trees sequentially to fit these gradients, and apply learning rate shrinkage.'
     ],
     bullets3: [
@@ -230,15 +230,15 @@ module.exports = [
       'Final Predictor: A weighted combination of all weak learners.'
     ],
     bullets2: [
-      'Initialize sample weights: \\(D_1(i) = \\frac{1}{N}\\).',
-      'Train weak learner, calculate error \\(\\epsilon_t\\), and compute estimator weight: \\(\\alpha_t = \\frac{1}{2} \\ln\\left(\\frac{1-\\epsilon_t}{\\epsilon_t}\\right)\\).',
-      'Update sample weights: \\(D_{t+1}(i) = \\frac{D_t(i) e^{-\\alpha_t y_i h_t(x_i)}}{Z_t}\\) (where $Z_t$ is a normalization factor).'
+      'Initialize sample weights: `D_1(i) = 1 / N`.',
+      'Train weak learner, calculate error `ε_t`, and compute estimator weight: `α_t = 1 / 2 \\ln1-ε_t / ε_t`.',
+      'Update sample weights: `D_{t+1}(i) = (D_t(i) e^{-α_t y_i h_t(x_i)}) / (Z_t)` (where `Z_t` is a normalization factor).'
     ],
     bullets3: [
       'Model: AdaBoost builds a strong classifier by sequentially adding weak classifiers that focus on the mistakes of their predecessors.'
     ],
     bullets4: [
-      'If a weak learner has an error rate of 0.5 (random guess), its weight is \\(\\alpha_t = \\ln(1) = 0\\), meaning it has no influence on the final model.'
+      'If a weak learner has an error rate of 0.5 (random guess), its weight is `α_t = \\ln(1) = 0`, meaning it has no influence on the final model.'
     ],
     bullets5: [
       'Q: "Why is AdaBoost sensitive to outliers?"',
@@ -286,15 +286,15 @@ module.exports = [
       'XOR Limit: A single perceptron can only learn linear decision boundaries, making it unable to solve the XOR problem.'
     ],
     bullets2: [
-      'Activation Formula: \\(z = w^T x + b\\)',
-      'Step Output: \\(\\hat{y} = \\begin{cases} 1 & \\text{if } z \\ge 0 \\\\ 0 & \\text{if } z < 0 \\end{cases}\\)'
+      'Activation Formula: `z = w^T x + b`',
+      'Step Output: `y_hat = \\begin{cases} 1 & if z ≥ 0 \\\\ 0 & if z < 0 \\end{cases}`'
     ],
     bullets3: [
       'Model: A perceptron divides space into two halves using a linear decision boundary.'
     ],
     bullets4: [
       'Calculate output for inputs `x = [1, 0]` with weights `w = [2, -1]` and bias `b = -1`:',
-      '\\(z = (1\\times2) + (0\\times-1) - 1 = 1 \\ge 0 \\implies \\hat{y} = 1\\).'
+      '`z = (1 * 2) + (0 * -1) - 1 = 1 ≥ 0 \\implies y_hat = 1`.'
     ],
     bullets5: [
       'Q: "Why did the XOR problem cause a winter in AI history?"',
@@ -313,9 +313,9 @@ module.exports = [
       'Common functions: Sigmoid (probability), Tanh (centered), ReLU (rectified linear, fast, solves vanishing gradients).'
     ],
     bullets2: [
-      'Sigmoid: \\(\\sigma(z) = \\frac{1}{1 + e^{-z}}\\), outputs range [0, 1].',
-      'Tanh: \\(g(z) = \\tanh(z)\\), outputs range [-1, 1].',
-      'ReLU: \\(g(z) = \\max(0, z)\\), outputs range [0, \\infty).'
+      'Sigmoid: `σ(z) = (1) / (1 + e^{-z)}`, outputs range [0, 1].',
+      'Tanh: `g(z) = tanh(z)`, outputs range [-1, 1].',
+      'ReLU: `g(z) = \\max(0, z)`, outputs range [0, \\infty).'
     ],
     bullets3: [
       'Analogy: Activation functions are like light switches with dimmers: they control how much signal is passed to the next layer.'
@@ -325,7 +325,7 @@ module.exports = [
       'A: Sigmoid saturates at extreme inputs, meaning its derivative approaches 0. This causes vanishing gradients during training. ReLU has a constant derivative of 1 for positive inputs, which speeds up training.'
     ],
     bullets5: [
-      'Dying ReLU Problem: Neurons can get trapped in the inactive state (output 0) if weights receive large negative updates. Solve this by using Leaky ReLU: \\(g(z) = \\max(0.01z, z)\\).'
+      'Dying ReLU Problem: Neurons can get trapped in the inactive state (output 0) if weights receive large negative updates. Solve this by using Leaky ReLU: `g(z) = \\max(0.01z, z)`.'
     ]
   },
   {
@@ -341,14 +341,14 @@ module.exports = [
     ],
     bullets2: [
       'Forward pass: Compute activations at each layer and calculate output loss.',
-      'Backward pass: Compute error gradients at the output layer: \\(\\delta^{[L]} = \\nabla_a L \\odot g\'(z^{[L]})\\).',
-      'Propagate errors back: \\(\\delta^{[l]} = \\left(W^{[l+1]T} \\delta^{[l+1]}\\right) \\odot g\'(z^{[l]})\\), and compute weights gradients: \\(\\frac{\\partial L}{\\partial W^{[l]}} = \\delta^{[l]} a^{[l-1]T}\\).'
+      'Backward pass: Compute error gradients at the output layer: `δ^{[L]} = ∇_a L ⊙ g\'(z^{[L]})`.',
+      'Propagate errors back: `δ^{[l]} = (W^{[l+1]T} δ^{[l+1]}) ⊙ g\'(z^{[l]})`, and compute weights gradients: `(\\partial L) / (\\partial W^{[l])} = δ^{[l]} a^{[l-1]T}`.'
     ],
     bullets3: [
       'Model: Backpropagation flows error signals backward through the network, assigning credit or blame to weights for the output error.'
     ],
     bullets4: [
-      'Gradient path for single weight: \\(\\frac{\\partial L}{\\partial w_i} = \\frac{\\partial L}{\\partial a} \\cdot \\frac{\\partial a}{\\partial z} \\cdot \\frac{\\partial z}{\\partial w_i}\\).'
+      'Gradient path for single weight: `(\\partial L) / (\\partial w_i) = (\\partial L) / (\\partial a) * (\\partial a) / (\\partial z) * (\\partial z) / (\\partial w_i)`.'
     ],
     bullets5: [
       'Q: "What is the difference between backpropagation and gradient descent?"',
@@ -367,15 +367,15 @@ module.exports = [
       'Classification: Binary Cross-Entropy (two classes), Categorical Cross-Entropy (multi-class).'
     ],
     bullets2: [
-      'MSE: \\(L = \\frac{1}{N} \\sum (y_i - \\hat{y}_i)^2\\)',
-      'Cross-Entropy: \\(L = -\\frac{1}{N} \\sum \\sum y_{ij} \\log(\\hat{y}_{ij})\\)'
+      'MSE: `L = 1 / N ∑ (y_i - y_hat_i)^2`',
+      'Cross-Entropy: `L = -1 / N ∑ ∑ y_{ij} log(y_hat_{ij})`'
     ],
     bullets3: [
       'Model: A loss function defines the optimization landscape: the goal is to navigate to the lowest point of this landscape.'
     ],
     bullets4: [
-      'Computing Binary Cross-Entropy: For actual label 1 and prediction 0.9: \\(L = -[1 \\log(0.9) + 0] \\approx 0.105\\).',
-      'If prediction is 0.1: \\(L = -[1 \\log(0.1) + 0] \\approx 2.30\\) (high penalty for incorrect predictions).'
+      'Computing Binary Cross-Entropy: For actual label 1 and prediction 0.9: `L = -[1 log(0.9) + 0] ≈ 0.105`.',
+      'If prediction is 0.1: `L = -[1 log(0.1) + 0] ≈ 2.30` (high penalty for incorrect predictions).'
     ],
     bullets5: [
       'Q: "Why is Categorical Cross-Entropy paired with the Softmax activation function?"',
@@ -451,7 +451,7 @@ module.exports = [
     ],
     bullets2: [
       'During backpropagation, weight gradients are computed by multiplying derivatives across layers (Chain Rule).',
-      'If activation derivatives are consistently $< 0.25$, multiplying them repeatedly causes the gradient to decay exponentially towards 0.'
+      'If activation derivatives are consistently `< 0.25`, multiplying them repeatedly causes the gradient to decay exponentially towards 0.'
     ],
     bullets3: [
       'Analogy: A whisper game: as the message is passed down a long line of people, it gets quieter and quieter until the first person cannot hear anything at all.'
@@ -476,9 +476,9 @@ module.exports = [
       'Shorthand: Placed typically between linear layers and activation functions.'
     ],
     bullets2: [
-      'Step 1: Compute batch mean \\(\\mu_B = \\frac{1}{m} \\sum x_i\\) and variance \\(\\sigma_B^2 = \\frac{1}{m} \\sum (x_i - \\mu_B)^2\\).',
-      'Step 2: Normalize: \\(\\hat{x}_i = \\frac{x_i - \\mu_B}{\\sqrt{\\sigma_B^2 + \\epsilon}}\\).',
-      'Step 3: Scale and shift: \\(y_i = \\gamma \\hat{x}_i + \\beta\\) (where \\(\\gamma\\) and \\(\\beta\\) are learnable parameters).'
+      'Step 1: Compute batch mean `μ_B = 1 / m ∑ x_i` and variance `σ_B^2 = 1 / m ∑ (x_i - μ_B)^2`.',
+      'Step 2: Normalize: `x_hat_i = (x_i - μ_B) / (√(σ_B^2 + ε))`.',
+      'Step 3: Scale and shift: `y_i = γ x_hat_i + β` (where `γ` and `β` are learnable parameters).'
     ],
     bullets3: [
       'Model: Batch Norm stabilizes the input range of each layer, keeping activations from drifting too large or small.'
@@ -498,14 +498,14 @@ module.exports = [
     folderId: '1a63c1c3-fffc-59f5-86f5-12b916f27cb5',
     type: 'theory',
     bullets1: [
-      'Definition: Regularization technique where random neurons are deactivated during training with a probability $p$.',
+      'Definition: Regularization technique where random neurons are deactivated during training with a probability `p`.',
       'Co-adaptation: Prevents neurons from co-adapting (relying on specific neighboring neurons), forcing them to learn robust features independently.',
-      'Test Behavior: Deactivated only during training. During testing, all neurons are active, but weights are scaled by $1-p$ to match activation expectations.'
+      'Test Behavior: Deactivated only during training. During testing, all neurons are active, but weights are scaled by `1-p` to match activation expectations.'
     ],
     bullets2: [
-      'Set dropout probability $p$ (e.g. 0.5).',
-      'During a training step, randomly set the activations of a fraction $p$ of hidden neurons to 0.',
-      'Scale remaining activations by \\(\\frac{1}{1-p}\\) (inverted dropout) to keep expectations consistent.'
+      'Set dropout probability `p` (e.g. 0.5).',
+      'During a training step, randomly set the activations of a fraction `p` of hidden neurons to 0.',
+      'Scale remaining activations by `1 / 1-p` (inverted dropout) to keep expectations consistent.'
     ],
     bullets3: [
       'Analogy: A sports team training: randomly benching key players forces other players to step up and learn to collaborate, creating a more robust team.'
@@ -515,7 +515,7 @@ module.exports = [
       'A: Dropout is active only during training to regularize the model. During testing, all neurons are active to generate deterministic predictions, with no dropout masking applied.'
     ],
     bullets5: [
-      'Ensemble Effect: Dropout can be viewed as training an ensemble of $2^H$ sub-networks (where $H$ is the number of hidden units) with shared weights.'
+      'Ensemble Effect: Dropout can be viewed as training an ensemble of `2^H` sub-networks (where `H` is the number of hidden units) with shared weights.'
     ]
   },
 
@@ -532,7 +532,7 @@ module.exports = [
       'Parameter Sharing: The same filter is applied across the entire image, reducing parameter counts.'
     ],
     bullets2: [
-      'Formula: \\(S(i, j) = (I * K)(i, j) = \\sum_m \\sum_n I(i-m, j-n) K(m, n)\\)'
+      'Formula: `S(i, j) = (I * K)(i, j) = ∑_m ∑_n I(i-m, j-n) K(m, n)`'
     ],
     bullets3: [
       'Model: A sliding window multiplying element-wise and summing values to detect feature matches.'
@@ -585,15 +585,15 @@ module.exports = [
       'Types: Valid padding (no padding, shrinks size) and Same padding (adds padding to preserve input dimensions).'
     ],
     bullets2: [
-      'Same Padding Formula: \\(P = \\frac{F - 1}{2}\\) (where $F$ is filter size, assuming stride of 1)'
+      'Same Padding Formula: `P = (F - 1) / (2)` (where `F` is filter size, assuming stride of 1)'
     ],
     bullets3: [
       'Model: Adding a border of zeros around the image to allow filters to slide over border pixels without falling off the edge.'
     ],
     bullets4: [
       'For a 32x32 input with a 5x5 filter and stride 1:',
-      'Without padding (Valid): Output shape is \\(32 - 5 + 1 = 28 \\times 28\\).',
-      'With Same padding: \\(P = \\frac{5-1}{2} = 2\\). Output shape remains 32x32.'
+      'Without padding (Valid): Output shape is `32 - 5 + 1 = 28 * 28`.',
+      'With Same padding: `P = 5-1 / 2 = 2`. Output shape remains 32x32.'
     ],
     bullets5: [
       'Q: "What is zero-padding vs reflection-padding?"',
@@ -612,14 +612,14 @@ module.exports = [
       'Shorthand: A stride of 1 moves the filter by 1 pixel at a time; a stride of 2 moves it by 2 pixels, skipping columns/rows.'
     ],
     bullets2: [
-      'Output Dimension Formula: \\(O = \\lfloor \\frac{I - F + 2P}{S} \\rfloor + 1\\) (where $I$ is input, $F$ is filter, $P$ is padding, $S$ is stride)'
+      'Output Dimension Formula: `O = floor( (I - F + 2P) / (S) ) + 1` (where `I` is input, `F` is filter, `P` is padding, `S` is stride)'
     ],
     bullets3: [
       'Model: Stride controls the spacing of filter application points across the image.'
     ],
     bullets4: [
       'For a 7x7 input, 3x3 filter, padding 0, stride 2:',
-      '\\(O = \\frac{7 - 3 + 0}{2} + 1 = 2 + 1 = 3 \\times 3\\).'
+      '`O = (7 - 3 + 0) / (2) + 1 = 2 + 1 = 3 * 3`.'
     ],
     bullets5: [
       'Q: "When is strided convolution used instead of pooling?"',
@@ -674,7 +674,7 @@ module.exports = [
     ],
     bullets4: [
       'Q: "Why are skip connections used in ResNet?"',
-      'A: Skip connections pass activations directly across layers: \\(y = F(x) + x\\). This allows gradients to flow directly through the skip pathway, solving the vanishing gradient problem in very deep networks (e.g. 152 layers).'
+      'A: Skip connections pass activations directly across layers: `y = F(x) + x`. This allows gradients to flow directly through the skip pathway, solving the vanishing gradient problem in very deep networks (e.g. 152 layers).'
     ],
     bullets5: [
       'Receptive field expansion: As you go deeper in a CNN, spatial dimensions shrink, but each remaining pixel represents a larger region of the original input image.'
@@ -690,18 +690,18 @@ module.exports = [
     type: 'math',
     bullets1: [
       'Definition: Recurrent Neural Network. A class of neural networks designed for sequential data where connections form feedback loops.',
-      'Hidden State ($h_t$): Acts as memory, capturing information from previous time steps: \\(h_t = f(W_{hh} h_{t-1} + W_{xh} x_t + b)\\).',
+      'Hidden State (`h_t`): Acts as memory, capturing information from previous time steps: `h_t = f(W_{hh} h_{t-1} + W_{xh} x_t + b)`.',
       'Student Shorthand: Processes sequences step-by-step, sharing weights across time steps.'
     ],
     bullets2: [
-      'Hidden State: \\(h_t = \\tanh(W_{hh} h_{t-1} + W_{xh} x_t + b_h)\\)',
-      'Output Equation: \\(y_t = W_{hy} h_t + b_y\\)'
+      'Hidden State: `h_t = tanh(W_{hh} h_{t-1} + W_{xh} x_t + b_h)`',
+      'Output Equation: `y_t = W_{hy} h_t + b_y`'
     ],
     bullets3: [
       'Model: An RNN can be unfolded into a sequence of identical network cells, sharing the same parameters across time.'
     ],
     bullets4: [
-      'Processing a sentence: At step $t$, the input is the current word $x_t$ and the hidden state $h_{t-1}$ representing the context of previous words.'
+      'Processing a sentence: At step `t`, the input is the current word `x_t` and the hidden state `h_{t-1}` representing the context of previous words.'
     ],
     bullets5: [
       'Q: "Why do standard RNNs struggle with long sequences?"',
@@ -720,9 +720,9 @@ module.exports = [
       'Effect: Weights in early time steps receive tiny updates, causing the model to lose track of long-term dependencies.'
     ],
     bullets2: [
-      'Unroll the RNN over $T$ time steps.',
+      'Unroll the RNN over `T` time steps.',
       'Calculate output loss at the end of the sequence.',
-      'Propagate gradients back through time steps. Recursive multiplication of weight matrices ($W_{hh}$) causes gradients to shrink if eigenvalues of $W_{hh} < 1$.'
+      'Propagate gradients back through time steps. Recursive multiplication of weight matrices (`W_{hh}`) causes gradients to shrink if eigenvalues of `W_{hh} < 1`.'
     ],
     bullets3: [
       'Analogy: Trying to read a very long paragraph: by the time you reach the end, you have forgotten what was written in the first sentence.'
@@ -732,7 +732,7 @@ module.exports = [
       'A: 1. Use gated architectures like LSTMs or GRUs. 2. Apply gradient clipping (for exploding gradients). 3. Initialize recurrent weights to the identity matrix.'
     ],
     bullets5: [
-      'Exploding Gradients in RNNs: Occurs when eigenvalues of recurrent weights $> 1$, causing gradients to grow exponentially and training to crash. Solve using Gradient Clipping.'
+      'Exploding Gradients in RNNs: Occurs when eigenvalues of recurrent weights `> 1`, causing gradients to grow exponentially and training to crash. Solve using Gradient Clipping.'
     ]
   },
   {
@@ -743,20 +743,20 @@ module.exports = [
     type: 'math',
     bullets1: [
       'Definition: Long Short-Term Memory network. A gated RNN architecture designed to learn long-term dependencies by resolving vanishing gradients.',
-      'Cell State ($C_t$): The internal memory pipeline that runs straight down the chain, modified only by linear interactions.',
+      'Cell State (`C_t`): The internal memory pipeline that runs straight down the chain, modified only by linear interactions.',
       'Gating Mechanism: Regulates information flow using three gates: Forget gate, Input gate, and Output gate.'
     ],
     bullets2: [
-      'Forget Gate: \\(f_t = \\sigma(W_f [h_{t-1}, x_t] + b_f)\\) (drops information).',
-      'Input Gate: \\(i_t = \\sigma(W_i [h_{t-1}, x_t] + b_i)\\) and candidate cell state: \\(\\tilde{C}_t = \\tanh(W_c [h_{t-1}, x_t] + b_c)\\).',
-      'Update Cell State: \\(C_t = f_t \\odot C_{t-1} + i_t \\odot \\tilde{C}_t\\).',
-      'Output Gate: \\(o_t = \\sigma(W_o [h_{t-1}, x_t] + b_o)\\) and hidden state update: \\(h_t = o_t \\odot \\tanh(C_t)\\).'
+      'Forget Gate: `f_t = σ(W_f [h_{t-1}, x_t] + b_f)` (drops information).',
+      'Input Gate: `i_t = σ(W_i [h_{t-1}, x_t] + b_i)` and candidate cell state: `C_tilde_t = tanh(W_c [h_{t-1}, x_t] + b_c)`.',
+      'Update Cell State: `C_t = f_t ⊙ C_{t-1} + i_t ⊙ C_tilde_t`.',
+      'Output Gate: `o_t = σ(W_o [h_{t-1}, x_t] + b_o)` and hidden state update: `h_t = o_t ⊙ tanh(C_t)`.'
     ],
     bullets3: [
       'Model: The cell state acts like a conveyor belt, with gates acting as valves adding or removing information along the belt.'
     ],
     bullets4: [
-      'If forget gate $f_t = 1$ and input gate $i_t = 0$, the cell state passes through unchanged: \\(C_t = C_{t-1}\\). This linear connection allows gradients to flow back without exponential decay.'
+      'If forget gate `f_t = 1` and input gate `i_t = 0`, the cell state passes through unchanged: `C_t = C_{t-1}`. This linear connection allows gradients to flow back without exponential decay.'
     ],
     bullets5: [
       'Q: "What are the three gates of an LSTM and their roles?"',
@@ -775,16 +775,16 @@ module.exports = [
       'Efficiency: Fewer parameters than LSTM, making it faster to train and less prone to overfitting on small datasets.'
     ],
     bullets2: [
-      'Update Gate: \\(z_t = \\sigma(W_z [h_{t-1}, x_t] + b_z)\\)',
-      'Reset Gate: \\(r_t = \\sigma(W_r [h_{t-1}, x_t] + b_r)\\)',
-      'Candidate Hidden State: \\(\\tilde{h}_t = \\tanh(W [r_t \\odot h_{t-1}, x_t] + b)\\)',
-      'Hidden State Update: \\(h_t = (1 - z_t) \\odot h_{t-1} + z_t \\odot \\tilde{h}_t\\)'
+      'Update Gate: `z_t = σ(W_z [h_{t-1}, x_t] + b_z)`',
+      'Reset Gate: `r_t = σ(W_r [h_{t-1}, x_t] + b_r)`',
+      'Candidate Hidden State: `h_tilde_t = tanh(W [r_t ⊙ h_{t-1}, x_t] + b)`',
+      'Hidden State Update: `h_t = (1 - z_t) ⊙ h_{t-1} + z_t ⊙ h_tilde_t`'
     ],
     bullets3: [
       'Model: GRU merges the gating pipelines, using a single update gate to balance old and new activations.'
     ],
     bullets4: [
-      'If update gate $z_t \\approx 0$, the hidden state remains unchanged: \\(h_t \\approx h_{t-1}\\). If $z_t \\approx 1$, the hidden state is overwritten by the new candidate state.'
+      'If update gate `z_t ≈ 0`, the hidden state remains unchanged: `h_t ≈ h_{t-1}`. If `z_t ≈ 1`, the hidden state is overwritten by the new candidate state.'
     ],
     bullets5: [
       'Q: "How does a GRU differ from an LSTM?"',

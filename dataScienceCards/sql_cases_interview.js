@@ -363,12 +363,12 @@ module.exports = [
     conceptA: 'L1 Regularization (Lasso)',
     conceptB: 'L2 Regularization (Ridge)',
     bullets1: [
-      'Definition: Regularization method that adds a penalty proportional to the absolute values of the weights: $\\lambda \\sum |w_i|$.',
+      'Definition: Regularization method that adds a penalty proportional to the absolute values of the weights: `λ ∑ |w_i|`.',
       'Sparsity: Drives unimportant weight coefficients to exactly zero, performing feature selection.',
       'Utility: Best when you have many features and expect only a few to be predictive.'
     ],
     bullets2: [
-      'Definition: Regularization method that adds a penalty proportional to the squared values of the weights: $\\lambda \\sum w_i^2$.',
+      'Definition: Regularization method that adds a penalty proportional to the squared values of the weights: `λ ∑ w_i^2`.',
       'Weight Shrinkage: Shrinks weight coefficients toward zero, but never makes them exactly zero.',
       'Utility: Best when you have many correlated features and want to distribute weight among them.'
     ],
@@ -377,7 +377,7 @@ module.exports = [
     ],
     bullets4: [
       'Feature | L1 (Lasso) | L2 (Ridge)',
-      'Penalty Term | Absolute sum ($|w|$) | Squared sum ($w^2$)',
+      'Penalty Term | Absolute sum (`|w|`) | Squared sum (`w^2`)',
       'Sparse Weights? | Yes (weights become 0) | No (weights approach 0)',
       'Feature Selection | Built-in | None',
       'Analytical Solution | No (requires optimization) | Yes (closed-form available)'
@@ -396,12 +396,12 @@ module.exports = [
     conceptA: 'Generative Models',
     conceptB: 'Discriminative Models',
     bullets1: [
-      'Definition: Models that learn the joint probability distribution $P(X, Y)$ of the input features and target labels.',
+      'Definition: Models that learn the joint probability distribution `P(X, Y)` of the input features and target labels.',
       'Function: Models how the data was generated to compute probabilities and generate new synthetic samples.',
       'Examples: Naive Bayes, Linear Discriminant Analysis (LDA), Gaussian Mixture Models, GANs.'
     ],
     bullets2: [
-      'Definition: Models that learn the conditional probability distribution $P(Y|X)$ directly.',
+      'Definition: Models that learn the conditional probability distribution `P(Y|X)` directly.',
       'Function: Maps input features straight to decision boundaries, focusing purely on classification.',
       'Examples: Logistic Regression, Support Vector Machines (SVM), Random Forests, Neural Networks.'
     ],
@@ -410,7 +410,7 @@ module.exports = [
     ],
     bullets4: [
       'Aspect | Generative Models | Discriminative Models',
-      'Objective | Learn joint distribution $P(X, Y)$ | Learn conditional distribution $P(Y|X)$',
+      'Objective | Learn joint distribution `P(X, Y)` | Learn conditional distribution `P(Y|X)`',
       'Data Generation | Can generate new samples | Cannot generate new samples',
       'Missing Data | Robust | Sensitive',
       'Outlier Detection | Excellent | Poor'
@@ -594,21 +594,21 @@ module.exports = [
     conceptA: 'Precision',
     conceptB: 'Recall (Sensitivity)',
     bullets1: [
-      'Definition: Out of all positive predictions, how many were actually positive: $\\frac{TP}{TP + FP}$.',
+      'Definition: Out of all positive predictions, how many were actually positive: `(TP) / (TP + FP)`.',
       'Objective: Minimize false positives (e.g. avoiding marking a legitimate email as spam).',
       'Utility: Critical when the cost of a false alarm is high.'
     ],
     bullets2: [
-      'Definition: Out of all actual positives, how many did the model find: $\\frac{TP}{TP + FN}$.',
+      'Definition: Out of all actual positives, how many did the model find: `(TP) / (TP + FN)`.',
       'Objective: Minimize false negatives (e.g. avoiding missing a malignant tumor).',
       'Utility: Critical when the cost of missing a positive case is catastrophic.'
     ],
     bullets3: [
-      'Tension: Changing the decision threshold to increase precision (making the model more selective) decreases recall (missing more cases). The F1-score balances both by computing their harmonic mean: $2 \\times \\frac{Precision \\times Recall}{Precision + Recall}$.'
+      'Tension: Changing the decision threshold to increase precision (making the model more selective) decreases recall (missing more cases). The F1-score balances both by computing their harmonic mean: `2 * (Precision * Recall) / (Precision + Recall)`.'
     ],
     bullets4: [
       'Focus | Precision | Recall',
-      'Denominator | Total predicted positives ($TP + FP$) | Total actual positives ($TP + FN$)',
+      'Denominator | Total predicted positives (`TP + FP`) | Total actual positives (`TP + FN`)',
       'Primary target | Minimizing False Positives | Minimizing False Negatives',
       'Key application | Spam detection, ad targeting | Disease screening, fraud detection'
     ],

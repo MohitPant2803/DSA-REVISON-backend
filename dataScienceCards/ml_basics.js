@@ -35,12 +35,12 @@ module.exports = [
     type: 'theory',
     bullets1: [
       'Definition: Data points that lie far away from the overall pattern of the rest of the dataset.',
-      'Detection: Common statistical methods include Z-score thresholding (>3 or <-3) and IQR scaling ($1.5 \\times IQR$).',
+      'Detection: Common statistical methods include Z-score thresholding (>3 or <-3) and IQR scaling (`1.5 * IQR`).',
       'Sensitivity: Distance-based models (KNN, K-Means) and linear regressions are highly sensitive to outliers.'
     ],
     bullets2: [
-      'Z-score check: Flag points where \\(Z = \\frac{x - \\mu}{\\sigma} > 3\\).',
-      'IQR check: Flag points outside range \\([Q1 - 1.5 \\times IQR, Q3 + 1.5 \\times IQR]\\).',
+      'Z-score check: Flag points where `Z = (x - μ) / (σ) > 3`.',
+      'IQR check: Flag points outside range `[Q1 - 1.5 * IQR, Q3 + 1.5 * IQR]`.',
       'Handle by trimming (dropping), capping (winsorization), or applying mathematical transformations (log transform).'
     ],
     bullets3: [
@@ -101,7 +101,7 @@ module.exports = [
     ],
     bullets5: [
       'Gotcha: Standard scaling assumes data is normally distributed. If data contains extreme outliers, use `RobustScaler` (which scales using median and IQR) instead.',
-      'Gotcha: Scaling target variable $Y$ is rarely required, but scaling inputs is vital for gradient descent speed and distance model correctness.'
+      'Gotcha: Scaling target variable `Y` is rarely required, but scaling inputs is vital for gradient descent speed and distance model correctness.'
     ]
   },
   {
@@ -113,19 +113,19 @@ module.exports = [
     lang: 'Python',
     bullets1: [
       'Definition: Scaling features to a fixed range, typically between 0 and 1.',
-      'Formula: Min-Max scaling: \\(x_{\\text{scaled}} = \\frac{x - x_{\\min}}{x_{\\max} - x_{\\min}}\\).',
+      'Formula: Min-Max scaling: `x_{scaled} = (x - x_{\\min}) / (x_{\\max) - x_{\\min}}`.',
       'Student Shorthand: Ideal for algorithms that do not assume normal distributions (e.g. neural networks or KNN).'
     ],
     code: `from sklearn.preprocessing import MinMaxScaler\nscaler = MinMaxScaler(feature_range=(0, 1))\n# Apply Min-Max scaling\nX_train_norm = scaler.fit_transform(X_train)\nX_test_norm = scaler.transform(X_test)`,
     bullets3: [
-      'Line 3-4: Fits parameters ($X_{min}$ and $X_{max}$) on the training set, then scales both datasets.'
+      'Line 3-4: Fits parameters (`X_{min}` and `X_{max}`) on the training set, then scales both datasets.'
     ],
     bullets4: [
       'Time Complexity: O(R * C) operations.',
       'Space Complexity: O(R * C) array allocations.'
     ],
     bullets5: [
-      'Gotcha: Outliers ruin min-max scaling because they stretch $X_{max}$ artificially, compressing normal values into a tiny range (e.g. 0.01 to 0.05).',
+      'Gotcha: Outliers ruin min-max scaling because they stretch `X_{max}` artificially, compressing normal values into a tiny range (e.g. 0.01 to 0.05).',
       'Gotcha: Min-Max normalization does not handle values outside the training range during test time gracefully. They will map outside the [0, 1] range.'
     ]
   },
@@ -332,7 +332,7 @@ module.exports = [
       'Student Shorthand: The difference between the expected prediction of our model and the true value.'
     ],
     bullets2: [
-      'Formula: \\(\\text{Bias}[\\hat{f}(x)] = E[\\hat{f}(x)] - f(x)\\)'
+      'Formula: `Bias[f_hat(x)] = E[f_hat(x)] - f(x)`'
     ],
     bullets3: [
       'Model: In a dartboard model, high bias is throwing a cluster of darts that lands far away from the bullseye.'
@@ -358,7 +358,7 @@ module.exports = [
       'Student Shorthand: Measures how much the predictions would change if the model was trained on a different sample of the same data.'
     ],
     bullets2: [
-      'Formula: \\(\\text{Variance}[\\hat{f}(x)] = E\\left[\\left(\\hat{f}(x) - E[\\hat{f}(x)]\\right)^2\\right]\\)'
+      'Formula: `Variance[f_hat(x)] = E[(f_hat(x) - E[f_hat(x)])^2]`'
     ],
     bullets3: [
       'Model: In a dartboard model, high variance is darts scattered randomly all over the board, showing high sensitivity to throwing conditions.'
@@ -438,8 +438,8 @@ module.exports = [
       'Student Shorthand: Controls the trade-off between model simplicity and training performance.'
     ],
     bullets2: [
-      'Lasso Loss (L1): \\(L = \\text{Loss} + \\lambda \\sum |w_i|\\), promoting feature sparsity.',
-      'Ridge Loss (L2): \\(L = \\text{Loss} + \\lambda \\sum w_i^2\\), penalizing extreme weights.'
+      'Lasso Loss (L1): `L = Loss + λ ∑ |w_i|`, promoting feature sparsity.',
+      'Ridge Loss (L2): `L = Loss + λ ∑ w_i^2`, penalizing extreme weights.'
     ],
     bullets3: [
       'Analogy: Regularization acts like a speed limit: it prevents the model from moving too fast and over-reacting to noise in the data.'
@@ -449,7 +449,7 @@ module.exports = [
       'A: L1 regularization uses absolute values, creating sharp corners in the constraint boundary. Optimization paths tend to hit these corners along coordinate axes, setting weights to exactly zero.'
     ],
     bullets5: [
-      'Elastic Net: Combines L1 and L2 penalties: \\(L = \\text{Loss} + r \\lambda \\sum |w_i| + \\frac{1-r}{2} \\lambda \\sum w_i^2\\). Ideal when features are highly correlated.'
+      'Elastic Net: Combines L1 and L2 penalties: `L = Loss + r λ ∑ |w_i| + 1-r / 2 λ ∑ w_i^2`. Ideal when features are highly correlated.'
     ]
   },
   {
@@ -491,16 +491,16 @@ module.exports = [
       'Assumptions: Linearity, homoscedasticity (constant variance of residuals), independence, and normality of residuals.'
     ],
     bullets2: [
-      'Model Equation: \\(\\hat{y} = w^T x + b\\)',
-      'OLS Cost: \\(J(w, b) = \\frac{1}{2N} \\sum_{i=1}^N (y_i - \\hat{y}_i)^2\\)',
-      'Normal Equation (Closed-form): \\(w = (X^T X)^{-1} X^T y\\)'
+      'Model Equation: `y_hat = w^T x + b`',
+      'OLS Cost: `J(w, b) = 1 / 2N ∑_{i=1}^N (y_i - y_hat_i)^2`',
+      'Normal Equation (Closed-form): `w = (X^T X)^{-1} X^T y`'
     ],
     bullets3: [
       'Model: Linear regression fits a flat hyperplane through data coordinates, minimizing the sum of squared vertical distances from points to the hyperplane.'
     ],
     bullets4: [
-      'Computing closed-form solution: \\(w = (X^T X)^{-1} X^T y\\).',
-      'If features are collinear, $X^T X$ is singular (not invertible), causing the closed-form calculation to fail.'
+      'Computing closed-form solution: `w = (X^T X)^{-1} X^T y`.',
+      'If features are collinear, `X^T X` is singular (not invertible), causing the closed-form calculation to fail.'
     ],
     bullets5: [
       'Q: "How do you detect multicollinearity in linear regression?"',
@@ -515,20 +515,20 @@ module.exports = [
     type: 'math',
     bullets1: [
       'Definition: Linear model for binary classification that outputs probabilities using the sigmoid function.',
-      'Decision Boundary: The boundary is linear: the model outputs 1 if probability $\\ge 0.5$, which occurs when \\(w^T x + b \\ge 0\\).',
+      'Decision Boundary: The boundary is linear: the model outputs 1 if probability `≥ 0.5`, which occurs when `w^T x + b ≥ 0`.',
       'Cost Function: Log Loss (Binary Cross-Entropy) because MSE is non-convex for logistic outputs.'
     ],
     bullets2: [
-      'Sigmoid Function: \\(\\sigma(z) = \\frac{1}{1 + e^{-z}}\\)',
-      'Probability: \\(P(y=1 \\mid x) = \\sigma(w^T x + b)\\)',
-      'Log Loss Cost: \\(J(w, b) = -\\frac{1}{N} \\sum [y_i \\log(\\hat{y}_i) + (1-y_i) \\log(1-\\hat{y}_i)]\\)'
+      'Sigmoid Function: `σ(z) = (1) / (1 + e^{-z)}`',
+      'Probability: `P(y=1 | x) = σ(w^T x + b)`',
+      'Log Loss Cost: `J(w, b) = -1 / N ∑ [y_i log(y_hat_i) + (1-y_i) log(1-y_hat_i)]`'
     ],
     bullets3: [
       'Model: Logistic regression projects data onto a linear line, then squashes the output through an S-shaped curve (sigmoid) to map it to a [0, 1] range.'
     ],
     bullets4: [
-      'If $z = w^T x + b = 0$, probability is \\(\\sigma(0) = 0.5\\) (exactly on the decision boundary).',
-      'If $z = 2$, probability is \\(\\sigma(2) = \\frac{1}{1 + e^{-2}} \\approx 0.88\\).'
+      'If `z = w^T x + b = 0`, probability is `σ(0) = 0.5` (exactly on the decision boundary).',
+      'If `z = 2`, probability is `σ(2) = (1) / (1 + e^{-2)} ≈ 0.88`.'
     ],
     bullets5: [
       'Q: "Why can\'t we use Mean Squared Error as the cost function for Logistic Regression?"',
@@ -542,24 +542,24 @@ module.exports = [
     folderId: '35892415-4e7c-5cf9-97b4-415f85628266',
     type: 'theory',
     bullets1: [
-      'Definition: Lazy, non-parametric instance-based algorithm that classifies a query point based on the majority vote of its $K$ nearest neighbors.',
+      'Definition: Lazy, non-parametric instance-based algorithm that classifies a query point based on the majority vote of its `K` nearest neighbors.',
       'Distance Metrics: Typically uses Euclidean distance (L2 norm) or Manhattan distance (L1 norm).',
       'Curse of Dimensionality: Performance degrades in high dimensions because distances between points compress and become uniform.'
     ],
     bullets2: [
       'Calculate the distance between the query point and all training points.',
-      'Sort points by distance and select the top $K$ nearest neighbors.',
-      'Return the majority class (classification) or average target value (regression) of these $K$ points.'
+      'Sort points by distance and select the top `K` nearest neighbors.',
+      'Return the majority class (classification) or average target value (regression) of these `K` points.'
     ],
     bullets3: [
       'Analogy: Birds of a feather flock together: the class of a point is determined by the classes of the points closest to it.'
     ],
     bullets4: [
-      'Q: "How does selecting $K$ impact the model?"',
-      'A: Small $K$ values (e.g. $K=1$) lead to low bias but high variance (overfitting, sensitive to noise). Large $K$ values smooth out boundaries, leading to low variance but high bias (underfitting).'
+      'Q: "How does selecting `K` impact the model?"',
+      'A: Small `K` values (e.g. `K=1`) lead to low bias but high variance (overfitting, sensitive to noise). Large `K` values smooth out boundaries, leading to low variance but high bias (underfitting).'
     ],
     bullets5: [
-      'Lazy Learner: KNN has zero training phase cost. However, testing is computationally expensive ($O(N)$) because it must calculate distances to all training points for every query.'
+      'Lazy Learner: KNN has zero training phase cost. However, testing is computationally expensive (`O(N)`) because it must calculate distances to all training points for every query.'
     ]
   },
   {
@@ -574,16 +574,16 @@ module.exports = [
       'High Variance: Prone to overfitting if allowed to grow to maximum depth without constraints.'
     ],
     bullets2: [
-      'Gini Impurity: \\(I_G(p) = 1 - \\sum p_i^2\\)',
-      'Entropy: \\(H(p) = -\\sum p_i \\log_2(p_i)\\)',
-      'Information Gain: \\(IG(T, a) = H(T) - H(T \\mid a)\\)'
+      'Gini Impurity: `I_G(p) = 1 - ∑ p_i^2`',
+      'Entropy: `H(p) = -∑ p_i log_2(p_i)`',
+      'Information Gain: `IG(T, a) = H(T) - H(T | a)`'
     ],
     bullets3: [
       'Model: Decision trees divide the input feature space into orthogonal rectangular regions (axis-aligned splits).'
     ],
     bullets4: [
-      'A dataset contains 4 positive and 4 negative classes. Total entropy is \\(H(T) = -0.5 \\log_2(0.5) - 0.5 \\log_2(0.5) = 1\\).',
-      'A split separates the data into a pure positive group (4 points, entropy 0) and a pure negative group (4 points, entropy 0). Information Gain is \\(1 - 0 = 1\\) (perfect split).'
+      'A dataset contains 4 positive and 4 negative classes. Total entropy is `H(T) = -0.5 log_2(0.5) - 0.5 log_2(0.5) = 1`.',
+      'A split separates the data into a pure positive group (4 points, entropy 0) and a pure negative group (4 points, entropy 0). Information Gain is `1 - 0 = 1` (perfect split).'
     ],
     bullets5: [
       'Q: "How do you control overfitting in decision trees?"',
@@ -602,15 +602,15 @@ module.exports = [
       'Support Vectors: The data points that lie closest to the decision boundary and define the separating hyperplane.'
     ],
     bullets2: [
-      'Primal Optimization: \\(\\min_{w, b} \\frac{1}{2} \\|w\\|^2\\) subject to \\(y_i(w^T x_i + b) \\ge 1\\)',
-      'RBF Kernel Function: \\(K(x, x\') = \exp(-\\gamma \\|x - x\'\\|^2)\\)'
+      'Primal Optimization: `\\min_{w, b} 1 / 2 \\|w\\|^2` subject to `y_i(w^T x_i + b) ≥ 1`',
+      'RBF Kernel Function: `K(x, x\') = \exp(-γ \\|x - x\'\\|^2)`'
     ],
     bullets3: [
       'Model: SVM places a separating wall between two classes, pushing the wall as far as possible from the nearest data points of both classes.'
     ],
     bullets4: [
-      'Linear SVM finds decision boundary weights. Points on the margin boundaries satisfy \\(w^T x_i + b = \\pm 1\\).',
-      'The margin width is given by \\(\\frac{2}{\\|w\\|}\\), so minimizing \\(\\|w\\|^2\\) maximizes the margin.'
+      'Linear SVM finds decision boundary weights. Points on the margin boundaries satisfy `w^T x_i + b = ± 1`.',
+      'The margin width is given by `2 / \\|w\\|`, so minimizing `\\|w\\|^2` maximizes the margin.'
     ],
     bullets5: [
       'Q: "What are the C and gamma parameters in an RBF SVM?"',
@@ -629,15 +629,15 @@ module.exports = [
       'Shorthand: Fast to train, highly effective for high-dimensional text classification (e.g. spam detection).'
     ],
     bullets2: [
-      'Classification Rule: \\(\\hat{y} = \\arg\\max_c P(y=c) \\prod_{i=1}^D P(x_i \\mid y=c)\\)',
-      'Laplace Smoothing: \\(P(x_i \\mid y=c) = \\frac{count(x_i, c) + \\alpha}{count(c) + \\alpha D}\\)'
+      'Classification Rule: `y_hat = \\arg\\max_c P(y=c) ∏_{i=1}^D P(x_i | y=c)`',
+      'Laplace Smoothing: `P(x_i | y=c) = (count(x_i, c) + α) / (count(c) + α D)`'
     ],
     bullets3: [
       'Model: Multiplies probability scores along the features dimension to determine which class is more likely.'
     ],
     bullets4: [
       'Predicting spam: A new email contains the word "Winner" (which appeared in 5/10 spam emails and 0/10 non-spam emails).',
-      'Without smoothing, \\(P(\\text{"Winner"} \\mid \\text{Non-Spam}) = 0\\), causing the entire joint probability to collapse to 0. Laplace smoothing (adding $\\alpha=1$ to counts) prevents this.'
+      'Without smoothing, `P("Winner" | Non-Spam) = 0`, causing the entire joint probability to collapse to 0. Laplace smoothing (adding `α=1` to counts) prevents this.'
     ],
     bullets5: [
       'Q: "Why is the Naive Bayes assumption called naive?"',
@@ -667,7 +667,7 @@ module.exports = [
     ],
     bullets4: [
       'Q: "How do you evaluate clustering quality without labels?"',
-      'A: Use the Silhouette Coefficient: \\(s = \\frac{b - a}{\\max(a, b)}\\) where $a$ is intra-cluster distance and $b$ is nearest-cluster distance. Scores close to 1 indicate well-separated, compact clusters.'
+      'A: Use the Silhouette Coefficient: `s = (b - a) / (\\max(a, b))` where `a` is intra-cluster distance and `b` is nearest-cluster distance. Scores close to 1 indicate well-separated, compact clusters.'
     ],
     bullets5: [
       'Sensitive to scaling: Feature scale impacts distance calculations. Always scale features prior to clustering.'
@@ -680,12 +680,12 @@ module.exports = [
     folderId: 'd104d670-6ef0-52af-9b1b-d5317913915c',
     type: 'math',
     bullets1: [
-      'Definition: Centroid-based partitioning algorithm that splits data into $K$ non-overlapping clusters.',
+      'Definition: Centroid-based partitioning algorithm that splits data into `K` non-overlapping clusters.',
       'Initialization: Choosing initial centroids. Standard K-Means is sensitive to initialization; `K-Means++` resolves this by placing initial centroids far apart.',
       'Limitations: Struggles with non-spherical shapes, outliers, and varying densities.'
     ],
     bullets2: [
-      'Objective Function: Minimize Within-Cluster Sum of Squares (WCSS): \\(J = \\sum_{j=1}^K \\sum_{x \\in C_j} \\|x - \\mu_j\\|^2\\).',
+      'Objective Function: Minimize Within-Cluster Sum of Squares (WCSS): `J = ∑_{j=1}^K ∑_{x ∈ C_j} \\|x - μ_j\\|^2`.',
       'Step 1: Assign each point to the closest centroid (Voronoi iteration).',
       'Step 2: Update centroids by calculating the mean of all assigned points. Repeat until convergence.'
     ],
@@ -721,7 +721,7 @@ module.exports = [
     ],
     bullets4: [
       'Q: "What are the computational limits of hierarchical clustering?"',
-      'A: High computational complexity: Time complexity is $O(N^3)$ (or $O(N^2)$ optimized) and space complexity is $O(N^2)$ to store the distance matrix. This makes it unsuitable for large datasets.'
+      'A: High computational complexity: Time complexity is `O(N^3)` (or `O(N^2)` optimized) and space complexity is `O(N^2)` to store the distance matrix. This makes it unsuitable for large datasets.'
     ],
     bullets5: [
       'Chaining Effect: A drawback of single linkage where clusters get pulled together into a long chain because of intermediate noise points between them.'
@@ -739,7 +739,7 @@ module.exports = [
       'Point Types: Core points (sufficient neighbors), Border points (reachable from core), Noise points (outliers).'
     ],
     bullets2: [
-      'For each point, count neighbors within radius `eps`. If counts $\\ge$ `minSamples`, flag as a Core point.',
+      'For each point, count neighbors within radius `eps`. If counts `≥` `minSamples`, flag as a Core point.',
       'Connect core points within `eps` distance to form density-reachable clusters.',
       'Assign border points to clusters, and flag remaining points as Noise.'
     ],
@@ -766,16 +766,16 @@ module.exports = [
       'Multicollinearity: PCA eliminates multicollinearity because the principal components are orthogonal (uncorrelated).'
     ],
     bullets2: [
-      'Mean-center the data: \\(X_c = X - \\mu\\).',
-      'Calculate the covariance matrix: \\(C = \\frac{1}{N} X_c^T X_c\\).',
-      'Compute eigenvectors and eigenvalues of $C$. Select the top $k$ eigenvectors to form the projection matrix $W$. Project data: \\(Z = X_c W\\).'
+      'Mean-center the data: `X_c = X - μ`.',
+      'Calculate the covariance matrix: `C = 1 / N X_c^T X_c`.',
+      'Compute eigenvectors and eigenvalues of `C`. Select the top `k` eigenvectors to form the projection matrix `W`. Project data: `Z = X_c W`.'
     ],
     bullets3: [
       'Model: PCA projects data points onto the line/plane that minimizes the sum of squared reconstruction errors.'
     ],
     bullets4: [
-      'If covariance matrix $C$ has eigenvalues $\\lambda_1 = 80$ and $\\lambda_2 = 20$:',
-      'The first principal component captures \\(\\frac{80}{80+20} = 80\\%\\) of total dataset variance.'
+      'If covariance matrix `C` has eigenvalues `λ_1 = 80` and `λ_2 = 20`:',
+      'The first principal component captures `80 / 80+20 = 80%` of total dataset variance.'
     ],
     bullets5: [
       'Q: "Why is mean-centering mandatory before running PCA?"',
@@ -808,7 +808,7 @@ module.exports = [
       'A: With class imbalance (e.g. fraud detection), the TN count is massive, masking high rates of FN errors. Focus on precision and recall instead of raw accuracy.'
     ],
     bullets5: [
-      'Accuracy: Total correct predictions divided by all predictions: \\(ACC = \\frac{TP + TN}{TP + TN + FP + FN}\\). Can be highly misleading in imbalanced datasets.'
+      'Accuracy: Total correct predictions divided by all predictions: `ACC = (TP + TN) / (TP + TN + FP + FN)`. Can be highly misleading in imbalanced datasets.'
     ]
   },
   {
@@ -823,14 +823,14 @@ module.exports = [
       'Student Shorthand: Out of all instances predicted as positive, how many were actually positive?'
     ],
     bullets2: [
-      'Formula: \\(Precision = \\frac{TP}{TP + FP}\\)'
+      'Formula: `Precision = (TP) / (TP + FP)`'
     ],
     bullets3: [
       'Model: The fraction of the predicted positive region that overlaps with actual positive points.'
     ],
     bullets4: [
       'A model predicts 10 emails as spam. 8 are actually spam, 2 are legitimate (False Positives).',
-      '\\(Precision = \\frac{8}{8+2} = 0.80\\).'
+      '`Precision = 8 / 8+2 = 0.80`.'
     ],
     bullets5: [
       'Q: "How do you increase precision?"',
@@ -849,14 +849,14 @@ module.exports = [
       'Student Shorthand: Out of all actual positive instances, how many did the model identify?'
     ],
     bullets2: [
-      'Formula: \\(Recall = \\frac{TP}{TP + FN}\\)'
+      'Formula: `Recall = (TP) / (TP + FN)`'
     ],
     bullets3: [
       'Model: The fraction of the actual positive points that overlap with predicted positive regions.'
     ],
     bullets4: [
       'A patient cohort has 10 actual cancer cases. The model identifies 7 cases, missing 3 (False Negatives).',
-      '\\(Recall = \\frac{7}{7+3} = 0.70\\).'
+      '`Recall = 7 / 7+3 = 0.70`.'
     ],
     bullets5: [
       'Q: "How do you increase recall?"',
@@ -875,18 +875,18 @@ module.exports = [
       'Student Shorthand: A robust metric for imbalanced classification tasks.'
     ],
     bullets2: [
-      'Formula: \\(F_1 = 2 \\times \\frac{Precision \\times Recall}{Precision + Recall} = \\frac{2TP}{2TP + FP + FN}\\)'
+      'Formula: `F_1 = 2 * (Precision * Recall) / (Precision + Recall) = (2TP) / (2TP + FP + FN)`'
     ],
     bullets3: [
       'Model: F1-score falls to 0 if either precision or recall is 0, requiring both metrics to be high to get a high score.'
     ],
     bullets4: [
       'If a classifier has Precision = 0.9 and Recall = 0.1:',
-      'Arithmetic mean is \\(\\frac{0.9+0.1}{2} = 0.5\\).',
-      'Harmonic mean (F1) is \\(2 \\times \\frac{0.09}{1.0} = 0.18\\) (reflecting poor performance).'
+      'Arithmetic mean is `0.9+0.1 / 2 = 0.5`.',
+      'Harmonic mean (F1) is `2 * 0.09 / 1.0 = 0.18` (reflecting poor performance).'
     ],
     bullets5: [
-      'F-beta Score: Generalizes F1 to weigh precision or recall higher: \\(F_\\beta = (1+\\beta^2) \\frac{Precision \\times Recall}{\\beta^2 Precision + Recall}\\). $\\beta=2$ weighs recall twice as high; $\\beta=0.5$ weighs precision twice as high.'
+      'F-beta Score: Generalizes F1 to weigh precision or recall higher: `F_β = (1+β^2) (Precision * Recall) / (β^2 Precision + Recall)`. `β=2` weighs recall twice as high; `β=0.5` weighs precision twice as high.'
     ]
   },
   {
@@ -897,7 +897,7 @@ module.exports = [
     type: 'theory',
     bullets1: [
       'Definition: Receiver Operating Characteristic curve. A graphical plot of True Positive Rate (TPR, Recall) vs False Positive Rate (FPR) across all classification thresholds.',
-      'FPR: The fraction of actual negative instances that are incorrectly predicted as positive: \\(FPR = \\frac{FP}{TN + FP}\\).',
+      'FPR: The fraction of actual negative instances that are incorrectly predicted as positive: `FPR = (FP) / (TN + FP)`.',
       'Student Shorthand: Evaluates classifier performance across all threshold settings.'
     ],
     bullets2: [
@@ -928,7 +928,7 @@ module.exports = [
       'Interpretation: Higher AUC scores indicate better model separation capability.'
     ],
     bullets2: [
-      'Formula: \\(AUC = \\int_0^1 \\text{TPR}(\\text{FPR}) d(\\text{FPR})\\)'
+      'Formula: `AUC = ∫_0^1 TPR(FPR) d(FPR)`'
     ],
     bullets3: [
       'Model: AUC measures the area under the ROC curve on the [0,1] grid.'
@@ -938,7 +938,7 @@ module.exports = [
     ],
     bullets5: [
       'Q: "When does AUC fail as an evaluation metric?"',
-      'A: With extreme class imbalance (e.g. 1 positive in 10,000 negatives), the FPR denominator ($TN+FP$) is dominated by TN. A model can make many false positive errors while maintaining a low FPR and high AUC. Use Precision-Recall AUC (PR-AUC) instead.'
+      'A: With extreme class imbalance (e.g. 1 positive in 10,000 negatives), the FPR denominator (`TN+FP`) is dominated by TN. A model can make many false positive errors while maintaining a low FPR and high AUC. Use Precision-Recall AUC (PR-AUC) instead.'
     ]
   }
 ];

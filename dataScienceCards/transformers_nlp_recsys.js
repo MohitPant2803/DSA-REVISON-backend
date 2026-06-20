@@ -9,7 +9,7 @@ module.exports = [
     bullets1: [
       'Definition: Dynamic scoring mechanism that allows models to focus on specific parts of the input sequence when generating output tokens.',
       'Shorthand: Originally developed for seq2seq translation to replace the fixed-size bottleneck vector with dynamically weighted source vectors.',
-      'Alignment Score: Measures the relevance of source word $i$ to target word $j$.'
+      'Alignment Score: Measures the relevance of source word `i` to target word `j`.'
     ],
     bullets2: [
       'Calculate alignment scores matching decoder hidden states against all encoder hidden states.',
@@ -21,7 +21,7 @@ module.exports = [
     ],
     bullets4: [
       'Q: "How does Bahdanau (Additive) attention differ from Luong (Multiplicative) attention?"',
-      'A: Bahdanau attention calculates scores using a single-layer MLP: \\(v_a^T \\tanh(W_a [s, h])\\). Luong attention uses matrix dot products: \\(s^T W_a h\\), which is computationally faster.'
+      'A: Bahdanau attention calculates scores using a single-layer MLP: `v_a^T tanh(W_a [s, h])`. Luong attention uses matrix dot products: `s^T W_a h`, which is computationally faster.'
     ],
     bullets5: [
       'Bottleneck elimination: Standard encoders compress sequences into a single vector, losing early information. Attention allows the decoder to look at all source states directly.'
@@ -35,11 +35,11 @@ module.exports = [
     type: 'math',
     bullets1: [
       'Definition: Attention mechanism matching words within the same sequence to compute representations of that sequence.',
-      'Vectors: Queries ($Q$), Keys ($K$), and Values ($V$). Projecting token embeddings into query, key, and value spaces.',
-      'Scaled Dot-Product: Dividing dot products by \\(\\sqrt{d_k}\\) to prevent gradients from vanishing in Softmax.'
+      'Vectors: Queries (`Q`), Keys (`K`), and Values (`V`). Projecting token embeddings into query, key, and value spaces.',
+      'Scaled Dot-Product: Dividing dot products by `√(d_k)` to prevent gradients from vanishing in Softmax.'
     ],
     bullets2: [
-      'Formula: \\(\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{Q K^T}{\\sqrt{d_k}}\\right) V\\)'
+      'Formula: `Attention(Q, K, V) = softmax(Q K^T) / (√(d_k)) V`'
     ],
     bullets3: [
       'Model: Self-attention calculates a lookup table matching each word against all other words in the sentence to build context.'
@@ -48,8 +48,8 @@ module.exports = [
       'For the sentence "The bank of the river": self-attention links "bank" with "river", resolving semantic ambiguity (water bank vs financial bank).'
     ],
     bullets5: [
-      'Q: "Why do we scale the dot product by \\(1 / \\sqrt{d_k}\\)?"',
-      'A: For large dimension sizes ($d_k$), dot products grow large, pushing the Softmax function into regions with tiny gradients. Scaling by \\(\\sqrt{d_k}\\) keeps variance stable and prevents vanishing gradients during training.'
+      'Q: "Why do we scale the dot product by `1 / √(d_k)`?"',
+      'A: For large dimension sizes (`d_k`), dot products grow large, pushing the Softmax function into regions with tiny gradients. Scaling by `√(d_k)` keeps variance stable and prevents vanishing gradients during training.'
     ]
   },
   {
@@ -64,14 +64,14 @@ module.exports = [
       'Aggregation: Outputs from all heads are concatenated and projected back to the original dimension.'
     ],
     bullets2: [
-      'Formula: \\(\\text{MultiHead}(Q, K, V) = \\text{Concat}(\\text{head}_1, \\dots, \\text{head}_h) W^O\\)',
-      'Head Equation: \\(\\text{head}_i = \\text{Attention}(Q W_i^Q, K W_i^K, V W_i^V)\\)'
+      'Formula: `MultiHead(Q, K, V) = Concat(head_1, ..., head_h) W^O`',
+      'Head Equation: `head_i = Attention(Q W_i^Q, K W_i^K, V W_i^V)`'
     ],
     bullets3: [
       'Model: Multiple heads act like different observers: one head tracks subject-verb relations, another tracks adjectives, and another tracks coreferences.'
     ],
     bullets4: [
-      'If dimension $d_{\\text{model}} = 512$ and heads $h = 8$, each head operates on a projected dimension size of \\(\\frac{512}{8} = 64\\).'
+      'If dimension `d_{model} = 512` and heads `h = 8`, each head operates on a projected dimension size of `512 / 8 = 64`.'
     ],
     bullets5: [
       'Q: "Why is Multi-Head Attention better than Single-Head Attention?"',
@@ -90,18 +90,18 @@ module.exports = [
       'Sine/Cosine: Sinusoidal functions used to generate positional coordinates.'
     ],
     bullets2: [
-      'Formula (Even): \\(PE_{(pos, 2i)} = \\sin\\left(\\frac{pos}{10000^{2i/d}}\\right)\\)',
-      'Formula (Odd): \\(PE_{(pos, 2i+1)} = \\cos\\left(\\frac{pos}{10000^{2i/d}}\\right)\\)'
+      'Formula (Even): `PE_{(pos, 2i)} = sin(pos / 10000^{2i/d})`',
+      'Formula (Odd): `PE_{(pos, 2i+1)} = cos(pos / 10000^{2i/d})`'
     ],
     bullets3: [
       'Model: Adding wave patterns to embeddings so the model can determine relative distances between words.'
     ],
     bullets4: [
-      'Positional encoding values are added directly to token embeddings: \\(x_{\\text{input}} = x_{\\text{token}} + PE\\).'
+      'Positional encoding values are added directly to token embeddings: `x_{input} = x_{token} + PE`.'
     ],
     bullets5: [
       'Q: "Why are sinusoidal functions used for positional encoding?"',
-      'A: Because they allow the model to learn relative position relationships easily: for any fixed offset $k$, \\(PE_{pos+k}\\) can be represented as a linear function of \\(PE_{pos}\\), allowing the model to generalize to longer sequences.'
+      'A: Because they allow the model to learn relative position relationships easily: for any fixed offset `k`, `PE_{pos+k}` can be represented as a linear function of `PE_{pos}`, allowing the model to generalize to longer sequences.'
     ]
   },
   {
@@ -128,7 +128,7 @@ module.exports = [
       'A: Batch normalization normalizes across the batch dimension, which fails with variable sequence lengths. Layer normalization normalizes across features within each token individually, making it sequence-length independent.'
     ],
     bullets5: [
-      'Complexity limit: Self-attention has quadratic complexity: $O(N^2)$ where $N$ is the sequence length. This makes it computationally expensive for long contexts.'
+      'Complexity limit: Self-attention has quadratic complexity: `O(N^2)` where `N` is the sequence length. This makes it computationally expensive for long contexts.'
     ]
   },
   {
@@ -166,7 +166,7 @@ module.exports = [
     type: 'theory',
     bullets1: [
       'Definition: Generative Pre-trained Transformer. Decoder-only model architecture trained to generate text.',
-      'Autoregressive: Generates text token-by-token: the output at step $t$ becomes the input at step $t+1$.',
+      'Autoregressive: Generates text token-by-token: the output at step `t` becomes the input at step `t+1`.',
       'Causal Masking: Restricts self-attention so tokens can only attend to past tokens in the sequence.'
     ],
     bullets2: [
@@ -273,11 +273,11 @@ module.exports = [
     bullets1: [
       'Definition: Prediction-based framework to learn static word embeddings using shallow neural networks.',
       'Architectures: Continuous Bag of Words (CBOW, predicts target from context) and Skip-gram (predicts context from target).',
-      'Semantic Math: Captures linear relationships: e.g. \\(v_{\\text{King}} - v_{\\text{Man}} + v_{\\text{Woman}} \\approx v_{\\text{Queen}}\\).'
+      'Semantic Math: Captures linear relationships: e.g. `v_{King} - v_{Man} + v_{Woman} ≈ v_{Queen}`.'
     ],
     bullets2: [
-      'Skip-Gram Objective: Maximize average log probability: \\(J = \\frac{1}{T} \\sum_{t=1}^T \\sum_{-c \\le j \\le c, j \\ne 0} \\log P(w_{t+j} \\mid w_t)\\).',
-      'Softmax Probability: \\(P(w_O \\mid w_I) = \\frac{\\exp(v\'_{w_O}{}^T v_{w_I})}{\\sum_{w} \\exp(v\'_w{}^T v_{w_I})}\\).',
+      'Skip-Gram Objective: Maximize average log probability: `J = 1 / T ∑_{t=1}^T ∑_{-c ≤ j ≤ c, j != 0} log P(w_{t+j} | w_t)`.',
+      'Softmax Probability: `P(w_O | w_I) = (expv\'_{w_O / ^T v_{w_I})}{∑_{w} exp(v\'_w{}^T v_{w_I})}`.',
       'Negative Sampling: Speeds up training by replacing the expensive vocabulary sum with a few negative noise samples.'
     ],
     bullets3: [
@@ -299,18 +299,18 @@ module.exports = [
     type: 'math',
     bullets1: [
       'Definition: Term Frequency-Inverse Document Frequency. Statistical measure evaluating a word\'s relevance to a document in a collection.',
-      'TF: Measures word frequency within a document: \\(TF(t, d) = \\frac{\\text{count}(t, d)}{\\text{total words in } d}\\).',
-      'IDF: Downweights words that appear frequently across all documents (e.g. "the", "is"): \\(IDF(t, D) = \\log\\left(\\frac{N}{1 + |\\{d \\in D : t \\in d\\}|}\\right)\\).'
+      'TF: Measures word frequency within a document: `TF(t, d) = (count(t, d)) / (total words in d)`.',
+      'IDF: Downweights words that appear frequently across all documents (e.g. "the", "is"): `IDF(t, D) = log((N) / (1 + |\\{d ∈ D : t ∈ d\\)|})`.'
     ],
     bullets2: [
-      'Formula: \\(TF\\text{-}IDF(t, d, D) = TF(t, d) \\times IDF(t, D)\\)'
+      'Formula: `TF-IDF(t, d, D) = TF(t, d) * IDF(t, D)`'
     ],
     bullets3: [
       'Model: TF-IDF scores highlight words that are unique and descriptive of a specific document, helping filter out common noise words.'
     ],
     bullets4: [
       'If a word appears 10 times in a 100-word document, TF = 0.1.',
-      'If the word appears in all 1,000 documents in the collection, IDF = \\(\\log(1000/1000) = 0\\), resulting in a TF-IDF score of 0.'
+      'If the word appears in all 1,000 documents in the collection, IDF = `log(1000/1000) = 0`, resulting in a TF-IDF score of 0.'
     ],
     bullets5: [
       'Q: "What are the limitations of TF-IDF?"',
@@ -341,7 +341,7 @@ module.exports = [
       'A: By weighting neighboring context words. For example, in "The bank of the river", attention weights the word "river" highly when representing "bank", capturing the correct meaning.'
     ],
     bullets5: [
-      'Self-Attention Complexity: Calculating attention weights takes $O(N^2)$ computations, which limits sequence lengths in Transformer models.'
+      'Self-Attention Complexity: Calculating attention weights takes `O(N^2)` computations, which limits sequence lengths in Transformer models.'
     ]
   },
 
@@ -397,7 +397,7 @@ module.exports = [
       'A: 1. Stability: Item ratings change slowly compared to dynamic user preferences. 2. Scalability: The number of items is typically much smaller than the number of users, making similarity calculations cheaper.'
     ],
     bullets5: [
-      'Sparsity: Rating matrices are sparse (most users rate $< 1\\%$ of items), which can degrade similarity calculations.'
+      'Sparsity: Rating matrices are sparse (most users rate `< 1%` of items), which can degrade similarity calculations.'
     ]
   },
   {
@@ -412,14 +412,14 @@ module.exports = [
       'Optimization: Alternating Least Squares (ALS) or Stochastic Gradient Descent (SGD).'
     ],
     bullets2: [
-      'Model Equation: \\(\\hat{R}_{u, i} = q_i^T p_u\\) (where $q_i$ is item embedding, $p_u$ is user embedding).',
-      'Regularized Objective: \\(\\min \\sum (R_{u, i} - q_i^T p_u)^2 + \\lambda (\\|q_i\\|^2 + \\|p_u\\|^2)\\).'
+      'Model Equation: `R_hat_{u, i} = q_i^T p_u` (where `q_i` is item embedding, `p_u` is user embedding).',
+      'Regularized Objective: `\\min ∑ (R_{u, i} - q_i^T p_u)^2 + λ (\\|q_i\\|^2 + \\|p_u\\|^2)`.'
     ],
     bullets3: [
       'Model: Matrix factorization projects both users and items into a shared latent space where ratings are dot products.'
     ],
     bullets4: [
-      'Decomposing a 10,000 x 1,000 matrix into a 10,000 x K user matrix and a K x 1,000 item matrix (where $K=50$ latent features) significantly reduces memory and generalizes predictions.'
+      'Decomposing a 10,000 x 1,000 matrix into a 10,000 x K user matrix and a K x 1,000 item matrix (where `K=50` latent features) significantly reduces memory and generalizes predictions.'
     ],
     bullets5: [
       'Q: "How do you handle missing ratings during matrix factorization?"',
@@ -467,7 +467,7 @@ module.exports = [
       'Decomposition: Separated from seasonal and residual noise components during time-series decomposition.'
     ],
     bullets2: [
-      'Apply time-series decomposition to split components: \\(Y_t = Trend_t + Seasonality_t + Residuals_t\\).',
+      'Apply time-series decomposition to split components: `Y_t = Trend_t + Seasonality_t + Residuals_t`.',
       'Calculate moving averages to smooth out short-term fluctuations and highlight the trend.',
       'Fit linear regressions against the time variable.'
     ],
@@ -476,7 +476,7 @@ module.exports = [
     ],
     bullets4: [
       'Q: "How do you detrend a time series?"',
-      'A: 1. Subtract the calculated rolling mean. 2. Apply differencing (subtracting previous values: \\(Y_t - Y_{t-1}\\)).'
+      'A: 1. Subtract the calculated rolling mean. 2. Apply differencing (subtracting previous values: `Y_t - Y_{t-1}`).'
     ],
     bullets5: [
       'Non-linear trends: Trends can be exponential or quadratic. Apply log transformations to linearize exponential trends before modeling.'
@@ -527,12 +527,12 @@ module.exports = [
       'Model: A stationary time series looks like a flat sequence with constant variance, fluctuating around a fixed mean line.'
     ],
     bullets4: [
-      'ADF test: Null hypothesis ($H_0$) states the series has a unit root (non-stationary).',
-      'If the calculated p-value is $< 0.05$, reject $H_0$ and confirm stationarity.'
+      'ADF test: Null hypothesis (`H_0`) states the series has a unit root (non-stationary).',
+      'If the calculated p-value is `< 0.05`, reject `H_0` and confirm stationarity.'
     ],
     bullets5: [
       'Q: "How do you make a non-stationary time series stationary?"',
-      'A: 1. Differencing (subtracting the previous value: \\(Y_t - Y_{t-1}\\)) to remove trends. 2. Log transformation to stabilize variance.'
+      'A: 1. Differencing (subtracting the previous value: `Y_t - Y_{t-1}`) to remove trends. 2. Log transformation to stabilize variance.'
     ]
   },
   {
@@ -558,7 +558,7 @@ module.exports = [
     ],
     bullets5: [
       'Common Interview Question: Moving averages introduce lag. A 30-day moving average reacts slowly to recent market drops, making it lag behind current price actions.',
-      'Common Interview Question: The first $W-1$ values (where $W$ is window size) are null, requiring imputation or drop handling before training models.'
+      'Common Interview Question: The first `W-1` values (where `W` is window size) are null, requiring imputation or drop handling before training models.'
     ]
   },
   {
@@ -569,17 +569,17 @@ module.exports = [
     type: 'math',
     bullets1: [
       'Definition: AutoRegressive Integrated Moving Average. Classical time-series forecasting model for stationary data.',
-      'Hyperparameters: $p$ (autoregressive lags), $d$ (order of differencing), $q$ (moving average lags of error).',
-      'Autoregressive (AR): Predicts future values based on past values: \\(Y_t = c + \\phi_1 Y_{t-1} + \\dots + \\epsilon_t\\).'
+      'Hyperparameters: `p` (autoregressive lags), `d` (order of differencing), `q` (moving average lags of error).',
+      'Autoregressive (AR): Predicts future values based on past values: `Y_t = c + φ_1 Y_{t-1} + ... + ε_t`.'
     ],
     bullets2: [
-      'ARIMA Equation: \\(Y\'_t = c + \\sum_{i=1}^p \\phi_i Y\'_{t-i} + \\epsilon_t + \\sum_{j=1}^q \\theta_j \\epsilon_{t-j}\\) (where $Y\'$ is the differenced series)'
+      'ARIMA Equation: `Y\'_t = c + ∑_{i=1}^p φ_i Y\'_{t-i} + ε_t + ∑_{j=1}^q θ_j ε_{t-j}` (where `Y\'` is the differenced series)'
     ],
     bullets3: [
       'Model: ARIMA combines past values and past prediction errors to predict the next step in the series.'
     ],
     bullets4: [
-      'Identifying $p$ and $q$: Analyze ACF (Autocorrelation) and PACF (Partial Autocorrelation) plots. PACF cutoff at lag $p$ suggests AR($p$); ACF cutoff at lag $q$ suggests MA($q$).'
+      'Identifying `p` and `q`: Analyze ACF (Autocorrelation) and PACF (Partial Autocorrelation) plots. PACF cutoff at lag `p` suggests AR(`p`); ACF cutoff at lag `q` suggests MA(`q`).'
     ],
     bullets5: [
       'Q: "How does SARIMA differ from ARIMA?"',
@@ -656,7 +656,7 @@ module.exports = [
     bullets2: [
       'Store training data distributions as a reference baseline.',
       'Calculate incoming feature statistics periodically in production.',
-      'Run statistical tests (e.g. KS test) to compare baseline and production distributions. Flag drift if p-value $< 0.05$.'
+      'Run statistical tests (e.g. KS test) to compare baseline and production distributions. Flag drift if p-value `< 0.05`.'
     ],
     bullets3: [
       'Analogy: A navigation app map becoming outdated as new roads are built and old roads are closed.'
@@ -666,7 +666,7 @@ module.exports = [
       'A: 1. Retrain the model using the latest production data. 2. Update feature preprocessing transformations. 3. Re-evaluate feature selection.'
     ],
     bullets5: [
-      'Covariate Shift: A sub-type of data drift where the input distribution $P(X)$ changes but the conditional probability $P(Y \mid X)$ remains constant.'
+      'Covariate Shift: A sub-type of data drift where the input distribution `P(X)` changes but the conditional probability `P(Y \mid X)` remains constant.'
     ]
   },
   {
