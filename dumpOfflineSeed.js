@@ -55,13 +55,18 @@ async function run() {
     timestamp: new Date().toISOString(),
   };
 
-  const outputPath = path.join(__dirname, '..', 'dsa-rev-front', 'src', 'constants', 'offlineSeed.json');
-  console.log(`Writing offline seed dataset to: ${outputPath}`);
+  const outputPath1 = path.join(__dirname, '..', 'dsa-rev-front', 'src', 'constants', 'offlineSeed.json');
+  const outputPath2 = path.join(__dirname, '..', 'dsa-rev-front', 'src', 'components', 'constants', 'offlineSeed.json');
+  console.log(`Writing offline seed dataset to: ${outputPath1} and ${outputPath2}`);
   
-  // Ensure the directory exists
-  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(outputPath, JSON.stringify(offlineSeed, null, 2), 'utf8');
-  console.log('Successfully written offline seed dataset!');
+  // Ensure the directories exist
+  fs.mkdirSync(path.dirname(outputPath1), { recursive: true });
+  fs.mkdirSync(path.dirname(outputPath2), { recursive: true });
+  
+  const jsonContent = JSON.stringify(offlineSeed, null, 2);
+  fs.writeFileSync(outputPath1, jsonContent, 'utf8');
+  fs.writeFileSync(outputPath2, jsonContent, 'utf8');
+  console.log('Successfully written offline seed datasets!');
 
   await mongoose.disconnect();
   console.log('Done.');
