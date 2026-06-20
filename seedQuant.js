@@ -28,6 +28,23 @@ function generateDeterministicUUID(input) {
   return `${hex.substr(0, 8)}-${hex.substr(8, 4)}-${hex.substr(12, 4)}-${hex.substr(16, 4)}-${hex.substr(20, 12)}`;
 }
 
+function processEquations(text) {
+  if (typeof text !== 'string') return text;
+  return text.replace(/( ?)`([^`]+)`/g, (match, space, p1, offset) => {
+    const len = p1.length;
+    if (len <= 30) {
+      const cleaned = p1.replace(/ /g, '\u00A0');
+      return `${space}\`${cleaned}\``;
+    } else {
+      if (space === ' ') {
+        return `\n\`${p1}\``;
+      } else {
+        return offset > 0 ? `\n\`${p1}\`` : `\`${p1}\``;
+      }
+    }
+  });
+}
+
 function formatBullets(arr) {
   if (!arr || arr.length === 0) return '';
   return arr.map(item => `• ${item}`).join('\n\n');
@@ -2073,7 +2090,7 @@ async function run() {
       const formattedSlides = compiledSlides.map((s, idx) => ({
         type: s.type,
         headline: s.headline,
-        body: s.body,
+        body: processEquations(s.body),
         code: s.code || null,
         blocks: s.blocks || [],
         slideIndex: idx,
@@ -2086,7 +2103,7 @@ async function run() {
           $set: {
             title: c.title,
             topic: 'Quant',
-            explanation: c.intro || c.problem || '',
+            explanation: processEquations(c.intro || c.problem || ''),
             code: c.code || '',
             image: '',
             tags: ['Quant', folderTitle, 'Placements'],

@@ -207,6 +207,23 @@ async function run() {
     { pattern: /\bSLO\b/g, replacement: '`SLO`' },
   ];
 
+  function processEquations(text) {
+    if (typeof text !== 'string') return text;
+    return text.replace(/( ?)`([^`]+)`/g, (match, space, p1, offset) => {
+      const len = p1.length;
+      if (len <= 30) {
+        const cleaned = p1.replace(/ /g, '\u00A0');
+        return `${space}\`${cleaned}\``;
+      } else {
+        if (space === ' ') {
+          return `\n\`${p1}\``;
+        } else {
+          return offset > 0 ? `\n\`${p1}\`` : `\`${p1}\``;
+        }
+      }
+    });
+  }
+
   function formatText(text) {
     if (typeof text !== 'string') return text;
     const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
@@ -220,7 +237,7 @@ async function run() {
         parts[i] = segment;
       }
     }
-    return parts.join('');
+    return processEquations(parts.join(''));
   }
 
   console.log(`\n--- Seeding ${CARDS_DATA.length} Data Science & AI Cards ---`);
