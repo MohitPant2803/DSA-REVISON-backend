@@ -208,8 +208,8 @@ module.exports = [
       'Space Complexity: O(N) memory allocation.'
     ],
     bullets5: [
-      'Gotcha: Stopword removal can lose critical context in tasks like sentiment analysis (e.g. removing "not" in "not good" changes the meaning entirely).',
-      'Gotcha: Stemming can create non-dictionary words (e.g. "universe" becomes "univers"), which hurts semantic representation.'
+      'Common Interview Question: Stopword removal can lose critical context in tasks like sentiment analysis (e.g. removing "not" in "not good" changes the meaning entirely).',
+      'Common Interview Question: Stemming can create non-dictionary words (e.g. "universe" becomes "univers"), which hurts semantic representation.'
     ]
   },
   {
@@ -233,8 +233,8 @@ module.exports = [
       'Space Complexity: O(T) where T is the number of tokens generated.'
     ],
     bullets5: [
-      'Gotcha: Different pre-trained models use different tokenization schemes. Always use the specific tokenizer paired with your model.',
-      'Gotcha: Whitespace tokenization fails with languages that do not use spaces (e.g. Chinese, Japanese).'
+      'Common Interview Question: Different pre-trained models use different tokenization schemes. Always use the specific tokenizer paired with your model.',
+      'Common Interview Question: Whitespace tokenization fails with languages that do not use spaces (e.g. Chinese, Japanese).'
     ]
   },
   {
@@ -557,8 +557,8 @@ module.exports = [
       'Space Complexity: O(N) memory allocation for the output Series.'
     ],
     bullets5: [
-      'Gotcha: Moving averages introduce lag. A 30-day moving average reacts slowly to recent market drops, making it lag behind current price actions.',
-      'Gotcha: The first $W-1$ values (where $W$ is window size) are null, requiring imputation or drop handling before training models.'
+      'Common Interview Question: Moving averages introduce lag. A 30-day moving average reacts slowly to recent market drops, making it lag behind current price actions.',
+      'Common Interview Question: The first $W-1$ values (where $W$ is window size) are null, requiring imputation or drop handling before training models.'
     ]
   },
   {

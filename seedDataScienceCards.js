@@ -59,7 +59,7 @@ function compileSlides(q) {
     });
     slides.push({ type: 'explanation', headline: '💡 Code Breakdown', body: formatBullets(q.bullets3), blocks: [] });
     slides.push({ type: 'explanation', headline: '🧠 Performance Footprint', body: formatBullets(q.bullets4), blocks: [] });
-    slides.push({ type: 'explanation', headline: '🧠 Common Interview Gotchas', body: formatBullets(q.bullets5), blocks: [] });
+    slides.push({ type: 'explanation', headline: '🧠 Common Interview Questions', body: formatBullets(q.bullets5), blocks: [] });
   }
   else if (q.type === 'comparison') {
     slides.push({ type: 'explanation', headline: `💡 ${q.conceptA}`, body: formatBullets(q.bullets1), blocks: [] });
@@ -216,7 +216,7 @@ async function run() {
         for (const r of replacements) {
           segment = segment.replace(r.pattern, r.replacement);
         }
-        segment = segment.replace(/^(Definition|Examples|Student Shorthand|Pro|Con|Pros|Cons|Q|A|Mechanism|Tension|Indicator|Rule|Difference|Utility|Indicator|Sparsity|Weight Shrinkage| interpretability|Goal|Consequence|Types|Step \d|Analogy|Limitation):/, '**$1**:');
+        segment = segment.replace(/^(Definition|Examples|Student Shorthand|Pro|Con|Pros|Cons|Q|A|Mechanism|Tension|Indicator|Rule|Difference|Utility|Indicator|Sparsity|Weight Shrinkage| interpretability|Goal|Consequence|Types|Step \d|Analogy|Limitation|Common Interview Question|Common Interview Questions):/, '**$1**:');
         parts[i] = segment;
       }
     }

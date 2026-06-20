@@ -24,8 +24,8 @@ module.exports = [
       'Space Complexity: O(N) where N is the number of elements stored.'
     ],
     bullets5: [
-      'Gotcha: Modifying a list while iterating over it leads to skipped elements or index errors. Use a slice copy `my_list[:]` instead.',
-      'Gotcha: Lists are mutable. Passing a list as a default parameter `def func(x=[])` binds a single shared list across all function calls.'
+      'Common Interview Question: Modifying a list while iterating over it leads to skipped elements or index errors. Use a slice copy `my_list[:]` instead.',
+      'Common Interview Question: Lists are mutable. Passing a list as a default parameter `def func(x=[])` binds a single shared list across all function calls.'
     ]
   },
   {
@@ -50,8 +50,8 @@ module.exports = [
       'Space Complexity: O(N) but uses less memory overhead than lists since no extra buffer capacity is reserved.'
     ],
     bullets5: [
-      'Gotcha: Single element tuples must include a trailing comma, e.g. `x = (5,)`. Without it, `x = (5)` is parsed as a regular integer.',
-      'Gotcha: Immutability prevents appending, but concatenation `t1 + t2` creates an entirely new tuple object (O(N) copy).'
+      'Common Interview Question: Single element tuples must include a trailing comma, e.g. `x = (5,)`. Without it, `x = (5)` is parsed as a regular integer.',
+      'Common Interview Question: Immutability prevents appending, but concatenation `t1 + t2` creates an entirely new tuple object (O(N) copy).'
     ]
   },
   {
@@ -77,8 +77,8 @@ module.exports = [
       'Space Complexity: O(N) where N is the number of key-value pairs.'
     ],
     bullets5: [
-      'Gotcha: Python dictionaries preserve insertion order (since Python 3.7). Prior versions did not.',
-      'Gotcha: Iterating over key views while modifying dictionary size raises a RuntimeError.'
+      'Common Interview Question: Python dictionaries preserve insertion order (since Python 3.7). Prior versions did not.',
+      'Common Interview Question: Iterating over key views while modifying dictionary size raises a RuntimeError.'
     ]
   },
   {
@@ -104,8 +104,8 @@ module.exports = [
       'Space Complexity: O(N) where N is the number of elements in the set.'
     ],
     bullets5: [
-      'Gotcha: `{}` creates an empty dictionary, not an empty set. Use `set()` to initialize an empty set.',
-      'Gotcha: Set elements must be hashable. You cannot nest sets or lists inside sets. Use `frozenset` if you need a set of sets.'
+      'Common Interview Question: `{}` creates an empty dictionary, not an empty set. Use `set()` to initialize an empty set.',
+      'Common Interview Question: Set elements must be hashable. You cannot nest sets or lists inside sets. Use `frozenset` if you need a set of sets.'
     ]
   },
   {
@@ -129,8 +129,8 @@ module.exports = [
       'Space Complexity: O(M) where M is the number of elements that pass the filter.'
     ],
     bullets5: [
-      'Gotcha: Avoid nesting more than two list comprehensions. It ruins readability and makes debugging difficult.',
-      'Gotcha: If you use `if-else` within list comprehensions, place it before the loop: `[x if x % 2 == 0 else 0 for x in numbers]`.'
+      'Common Interview Question: Avoid nesting more than two list comprehensions. It ruins readability and makes debugging difficult.',
+      'Common Interview Question: If you use `if-else` within list comprehensions, place it before the loop: `[x if x % 2 == 0 else 0 for x in numbers]`.'
     ]
   },
   {
@@ -155,8 +155,8 @@ module.exports = [
       'Space Complexity: Allocates memory on the call stack for local frames.'
     ],
     bullets5: [
-      'Gotcha: Never use mutable defaults `def my_func(a=[])`. The default list is instantiated once at function compile time and shared across all calls.',
-      'Gotcha: Modifying global variables inside a function requires the `global` keyword, but this is a code smell. Use arguments and return values instead.'
+      'Common Interview Question: Never use mutable defaults `def my_func(a=[])`. The default list is instantiated once at function compile time and shared across all calls.',
+      'Common Interview Question: Modifying global variables inside a function requires the `global` keyword, but this is a code smell. Use arguments and return values instead.'
     ]
   },
   {
@@ -180,8 +180,8 @@ module.exports = [
       'Space Complexity: O(1) auxiliary space.'
     ],
     bullets5: [
-      'Gotcha: Lambda functions cannot contain statements (e.g. `assert`, `pass`, `return`, `for`). Only expressions are allowed.',
-      'Gotcha: PEP 8 discourages binding lambdas to names (e.g. `f = lambda x: x*2`). Use standard `def` declarations for named functions.'
+      'Common Interview Question: Lambda functions cannot contain statements (e.g. `assert`, `pass`, `return`, `for`). Only expressions are allowed.',
+      'Common Interview Question: PEP 8 discourages binding lambdas to names (e.g. `f = lambda x: x*2`). Use standard `def` declarations for named functions.'
     ]
   },
   {
@@ -207,8 +207,8 @@ module.exports = [
       'Space Complexity: Creates call stack frames for the wrapper function.'
     ],
     bullets5: [
-      'Gotcha: Decorable wrappers replace the target function\'s metadata (e.g. name, docstrings). Fix this by importing `functools.wraps` and applying `@wraps(func)` to the wrapper.',
-      'Gotcha: Order matters. Multiple decorators are stacked bottom-up (innermost to outermost).'
+      'Common Interview Question: Decorable wrappers replace the target function\'s metadata (e.g. name, docstrings). Fix this by importing `functools.wraps` and applying `@wraps(func)` to the wrapper.',
+      'Common Interview Question: Order matters. Multiple decorators are stacked bottom-up (innermost to outermost).'
     ]
   },
   {
@@ -232,8 +232,8 @@ module.exports = [
       'Space Complexity: O(1) auxiliary memory, as opposed to O(N) for reading the entire file into a list.'
     ],
     bullets5: [
-      'Gotcha: Generator iterators can only be traversed once. Once exhausted, they raise `StopIteration` and cannot be reset.',
-      'Gotcha: You cannot use list indexes or slicing operations on generators directly. Use `itertools.islice` if indexing is required.'
+      'Common Interview Question: Generator iterators can only be traversed once. Once exhausted, they raise `StopIteration` and cannot be reset.',
+      'Common Interview Question: You cannot use list indexes or slicing operations on generators directly. Use `itertools.islice` if indexing is required.'
     ]
   },
   {
@@ -258,8 +258,8 @@ module.exports = [
       'Space Complexity: O(1) state tracker.'
     ],
     bullets5: [
-      'Gotcha: Iterating over an iterator directly in a nested loop fails on the second iteration since the iterator is already exhausted.',
-      'Gotcha: Iterators are lazy evaluators. Do not verify length with `len()` as they do not support length checking.'
+      'Common Interview Question: Iterating over an iterator directly in a nested loop fails on the second iteration since the iterator is already exhausted.',
+      'Common Interview Question: Iterators are lazy evaluators. Do not verify length with `len()` as they do not support length checking.'
     ]
   },
   {
@@ -285,8 +285,8 @@ module.exports = [
       'Space Complexity: O(1) class reference memory.'
     ],
     bullets5: [
-      'Gotcha: Class variables (defined in class scope) are shared by all instances. Instance variables (defined in `__init__`) are separate. Watch out for shared list mutations in class scope.',
-      'Gotcha: Python supports multiple inheritance. It resolves method name conflicts using C3 Linearization to build the `__mro__` lookup order.'
+      'Common Interview Question: Class variables (defined in class scope) are shared by all instances. Instance variables (defined in `__init__`) are separate. Watch out for shared list mutations in class scope.',
+      'Common Interview Question: Python supports multiple inheritance. It resolves method name conflicts using C3 Linearization to build the `__mro__` lookup order.'
     ]
   },
   {
@@ -312,8 +312,8 @@ module.exports = [
       'Space Complexity: Stack allocation for traceback frame information.'
     ],
     bullets5: [
-      'Gotcha: Never write bare `except: pass`. It silences all exceptions (including syntax errors and system keyboard interrupts), making debugging impossible.',
-      'Gotcha: Exceptions are matched sequentially. Place specific exception subclasses (e.g. `FileNotFoundError`) before base classes (e.g. `Exception`).'
+      'Common Interview Question: Never write bare `except: pass`. It silences all exceptions (including syntax errors and system keyboard interrupts), making debugging impossible.',
+      'Common Interview Question: Exceptions are matched sequentially. Place specific exception subclasses (e.g. `FileNotFoundError`) before base classes (e.g. `Exception`).'
     ]
   },
 
@@ -340,8 +340,8 @@ module.exports = [
       'Space Complexity: Contiguous memory storage equal to `size * itemsize` bytes.'
     ],
     bullets5: [
-      'Gotcha: Passing elements of mixed types forces upcasting (e.g. matching ints and strings forces array elements to become strings).',
-      'Gotcha: Creating standard lists from arrays `arr.tolist()` is computationally expensive because it wraps every primitive integer into a Python object.'
+      'Common Interview Question: Passing elements of mixed types forces upcasting (e.g. matching ints and strings forces array elements to become strings).',
+      'Common Interview Question: Creating standard lists from arrays `arr.tolist()` is computationally expensive because it wraps every primitive integer into a Python object.'
     ]
   },
   {
@@ -366,8 +366,8 @@ module.exports = [
       'Space Complexity: O(N) memory allocation for output arrays.'
     ],
     bullets5: [
-      'Gotcha: The `*` operator performs element-wise multiplication. For matrix dot products, use `a @ b` or `np.dot(a, b)`.',
-      'Gotcha: Operators fail with `ValueError` if array shapes are incompatible and cannot be broadcasted.'
+      'Common Interview Question: The `*` operator performs element-wise multiplication. For matrix dot products, use `a @ b` or `np.dot(a, b)`.',
+      'Common Interview Question: Operators fail with `ValueError` if array shapes are incompatible and cannot be broadcasted.'
     ]
   },
   {
@@ -391,8 +391,8 @@ module.exports = [
       'Space Complexity: O(R * C) to store the result, with O(1) memory duplication overhead during broadcasting.'
     ],
     bullets5: [
-      'Gotcha: Broadcasting fails if trailing dimensions are not compatible (e.g. trying to add a vector of shape (2,) to a matrix of shape (3,3) raises a `ValueError`).',
-      'Gotcha: Always check dimensions using `.reshape()` or `np.newaxis` to force compatibility before performing operations.'
+      'Common Interview Question: Broadcasting fails if trailing dimensions are not compatible (e.g. trying to add a vector of shape (2,) to a matrix of shape (3,3) raises a `ValueError`).',
+      'Common Interview Question: Always check dimensions using `.reshape()` or `np.newaxis` to force compatibility before performing operations.'
     ]
   },
   {
@@ -417,8 +417,8 @@ module.exports = [
       'Space Complexity: Equal memory footprints, but vectorized calls significantly reduce execution times.'
     ],
     bullets5: [
-      'Gotcha: Not all logic is vectorizable. Complex conditional branches (`if-else`) inside loops are hard to vectorize without using `np.where` or boolean indexing.',
-      'Gotcha: `np.vectorize` is a convenience wrapper for readability. It does not run compiled C loops and is as slow as standard `for` loops.'
+      'Common Interview Question: Not all logic is vectorizable. Complex conditional branches (`if-else`) inside loops are hard to vectorize without using `np.where` or boolean indexing.',
+      'Common Interview Question: `np.vectorize` is a convenience wrapper for readability. It does not run compiled C loops and is as slow as standard `for` loops.'
     ]
   },
   {
@@ -443,8 +443,8 @@ module.exports = [
       'Space Complexity: O(1) auxiliary allocation since the underlying data buffer is shared.'
     ],
     bullets5: [
-      'Gotcha: If target dimensions do not match size (e.g. reshaping 6 elements into shape (2,4)), a `ValueError` is raised.',
-      'Gotcha: Use `-1` as a dimension placeholder to let NumPy automatically calculate the required size, e.g. `arr.reshape(2, -1)`.'
+      'Common Interview Question: If target dimensions do not match size (e.g. reshaping 6 elements into shape (2,4)), a `ValueError` is raised.',
+      'Common Interview Question: Use `-1` as a dimension placeholder to let NumPy automatically calculate the required size, e.g. `arr.reshape(2, -1)`.'
     ]
   },
   {
@@ -469,8 +469,8 @@ module.exports = [
       'Space Complexity: Slicing: O(1) auxiliary | Filtering: O(K) where K is the number of elements matching the condition.'
     ],
     bullets5: [
-      'Gotcha: Modifying basic slices updates the original array in-place. If you want to prevent updates, call `.copy()` explicitly: `arr[0:2].copy()`.',
-      'Gotcha: Mixing basic slicing and fancy indexing can lead to unexpected array shapes and copies.'
+      'Common Interview Question: Modifying basic slices updates the original array in-place. If you want to prevent updates, call `.copy()` explicitly: `arr[0:2].copy()`.',
+      'Common Interview Question: Mixing basic slicing and fancy indexing can lead to unexpected array shapes and copies.'
     ]
   },
   {
@@ -523,8 +523,8 @@ module.exports = [
       'Space Complexity: O(R * C) memory footprint.'
     ],
     bullets5: [
-      'Gotcha: Storing columns with different data types inside a single DataFrame is supported, but mixing types inside a single column forces the column data type to become a generic `object`, which slows down calculations.',
-      'Gotcha: Avoid iterating over rows using `for index, row in df.iterrows()`. It is slow because it creates a new Series object for every row. Use vectorized operations instead.'
+      'Common Interview Question: Storing columns with different data types inside a single DataFrame is supported, but mixing types inside a single column forces the column data type to become a generic `object`, which slows down calculations.',
+      'Common Interview Question: Avoid iterating over rows using `for index, row in df.iterrows()`. It is slow because it creates a new Series object for every row. Use vectorized operations instead.'
     ]
   },
   {
@@ -550,8 +550,8 @@ module.exports = [
       'Space Complexity: O(N) where N is the number of elements in the Series.'
     ],
     bullets5: [
-      'Gotcha: Unlike dictionaries, Series index labels do not need to be unique, but duplicate index values slow down search performance from O(1) to O(N).',
-      'Gotcha: Performing math operations on two Series align values based on matching index labels. Mismatched labels return `NaN`.'
+      'Common Interview Question: Unlike dictionaries, Series index labels do not need to be unique, but duplicate index values slow down search performance from O(1) to O(N).',
+      'Common Interview Question: Performing math operations on two Series align values based on matching index labels. Mismatched labels return `NaN`.'
     ]
   },
   {
@@ -575,8 +575,8 @@ module.exports = [
       'Space Complexity: Loads the selected dataset directly into RAM.'
     ],
     bullets5: [
-      'Gotcha: Loading massive datasets without chunking can exceed system memory limits, causing crashes. Use the `chunksize` parameter to load and process data in batches: `pd.read_csv("huge.csv", chunksize=10000)`.',
-      'Gotcha: Parsing date columns is slow. Specify date columns explicitly during load using `parse_dates=["date_col"]` rather than converting them later.'
+      'Common Interview Question: Loading massive datasets without chunking can exceed system memory limits, causing crashes. Use the `chunksize` parameter to load and process data in batches: `pd.read_csv("huge.csv", chunksize=10000)`.',
+      'Common Interview Question: Parsing date columns is slow. Specify date columns explicitly during load using `parse_dates=["date_col"]` rather than converting them later.'
     ]
   },
   {
@@ -602,8 +602,8 @@ module.exports = [
       'Space Complexity: Creates a new DataFrame containing the filtered copies.'
     ],
     bullets5: [
-      'Gotcha: Standard logical operators `and` and `or` do not work for DataFrame filters. You must use the bitwise operators `&` and `|` instead.',
-      'Gotcha: Modifying filtered subsets without using `.loc` can trigger a `SettingWithCopyWarning`. Use `.loc` explicitly to modify original values.'
+      'Common Interview Question: Standard logical operators `and` and `or` do not work for DataFrame filters. You must use the bitwise operators `&` and `|` instead.',
+      'Common Interview Question: Modifying filtered subsets without using `.loc` can trigger a `SettingWithCopyWarning`. Use `.loc` explicitly to modify original values.'
     ]
   },
   {
@@ -628,8 +628,8 @@ module.exports = [
       'Space Complexity: O(K) where K is the number of unique groups.'
     ],
     bullets5: [
-      'Gotcha: Grouping by multiple columns creates a MultiIndex. Use `as_index=False` inside `.groupby()` to return standard columns instead.',
-      'Gotcha: Avoid calculating aggregations using manual loops inside `.apply()`. Use optimized built-in vector methods like `.mean()` or `.sum()` instead.'
+      'Common Interview Question: Grouping by multiple columns creates a MultiIndex. Use `as_index=False` inside `.groupby()` to return standard columns instead.',
+      'Common Interview Question: Avoid calculating aggregations using manual loops inside `.apply()`. Use optimized built-in vector methods like `.mean()` or `.sum()` instead.'
     ]
   },
   {
@@ -654,8 +654,8 @@ module.exports = [
       'Space Complexity: O(R1 + R2) to store the merged result.'
     ],
     bullets5: [
-      'Gotcha: If duplicate keys exist in both DataFrames, a merge returns a Cartesian product (multiplies matching rows), which can cause massive memory consumption.',
-      'Gotcha: Joins that result in missing values convert integer columns to floats because standard integers do not support `NaN` values.'
+      'Common Interview Question: If duplicate keys exist in both DataFrames, a merge returns a Cartesian product (multiplies matching rows), which can cause massive memory consumption.',
+      'Common Interview Question: Joins that result in missing values convert integer columns to floats because standard integers do not support `NaN` values.'
     ]
   },
   {
@@ -680,8 +680,8 @@ module.exports = [
       'Space Complexity: O(R1 + R2) memory allocation.'
     ],
     bullets5: [
-      'Gotcha: If joining columns share the same name, the operation raises a ValueError unless suffixes are explicitly specified.',
-      'Gotcha: Always check that index labels match exactly. Mismatched index labels return `NaN` values.'
+      'Common Interview Question: If joining columns share the same name, the operation raises a ValueError unless suffixes are explicitly specified.',
+      'Common Interview Question: Always check that index labels match exactly. Mismatched index labels return `NaN` values.'
     ]
   },
   {
@@ -707,8 +707,8 @@ module.exports = [
       'Space Complexity: Returns a new copy of the DataFrame unless `inplace=True` is specified.'
     ],
     bullets5: [
-      'Gotcha: Python `NaN` values cannot be compared using `==` (e.g. `NaN == NaN` is False). Always use `.isna()` to locate missing values.',
-      'Gotcha: Avoid imputing missing values with the mean if the column contains extreme outliers. Use the median or mode instead.'
+      'Common Interview Question: Python `NaN` values cannot be compared using `==` (e.g. `NaN == NaN` is False). Always use `.isna()` to locate missing values.',
+      'Common Interview Question: Avoid imputing missing values with the mean if the column contains extreme outliers. Use the median or mode instead.'
     ]
   },
   {
@@ -733,8 +733,8 @@ module.exports = [
       'Space Complexity: Auxiliary allocations for transient Series objects during loop.'
     ],
     bullets5: [
-      'Gotcha: Row-wise loops (`axis=1`) are a common bottleneck in preprocessing pipelines. Use vectorized calculations instead: `df["total"] = df["salary"] + df["bonus"]`.',
-      'Gotcha: If elements can be mapped directly using a dictionary lookup, use `.map()` instead of `.apply()` for better performance.'
+      'Common Interview Question: Row-wise loops (`axis=1`) are a common bottleneck in preprocessing pipelines. Use vectorized calculations instead: `df["total"] = df["salary"] + df["bonus"]`.',
+      'Common Interview Question: If elements can be mapped directly using a dictionary lookup, use `.map()` instead of `.apply()` for better performance.'
     ]
   }
 ];

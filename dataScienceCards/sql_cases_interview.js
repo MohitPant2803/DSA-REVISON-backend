@@ -53,8 +53,8 @@ module.exports = [
       'Space Complexity: O(G) memory where G is the number of distinct groups generated.'
     ],
     bullets5: [
-      'Gotcha: Using a `HAVING` clause without a `GROUP BY` is technically valid but behaves as a single group. If the condition fails, it returns zero rows.',
-      'Gotcha: Avoid putting non-aggregate filters in `HAVING` (e.g. `HAVING status = \'Active\'`). It forces the engine to group unneeded rows, hurting query performance.'
+      'Common Interview Question: Using a `HAVING` clause without a `GROUP BY` is technically valid but behaves as a single group. If the condition fails, it returns zero rows.',
+      'Common Interview Question: Avoid putting non-aggregate filters in `HAVING` (e.g. `HAVING status = \'Active\'`). It forces the engine to group unneeded rows, hurting query performance.'
     ]
   },
   {
@@ -79,8 +79,8 @@ module.exports = [
       'Space Complexity: O(M) memory to build the hash table for the left join.'
     ],
     bullets5: [
-      'Gotcha: Joining tables on fields containing `NULL` will result in those rows being discarded in an inner join, as `NULL` matches nothing.',
-      'Gotcha: Putting a filter on the right table in the `WHERE` clause of a `LEFT JOIN` implicitly converts it into an `INNER JOIN`. Use the filter inside the `ON` clause instead.'
+      'Common Interview Question: Joining tables on fields containing `NULL` will result in those rows being discarded in an inner join, as `NULL` matches nothing.',
+      'Common Interview Question: Putting a filter on the right table in the `WHERE` clause of a `LEFT JOIN` implicitly converts it into an `INNER JOIN`. Use the filter inside the `ON` clause instead.'
     ]
   },
   {
@@ -105,8 +105,8 @@ module.exports = [
       'Space Complexity: O(N) memory to store ranking index partitions.'
     ],
     bullets5: [
-      'Gotcha: `ROW_NUMBER()` assigns sequential numbers. `RANK()` skips ranks on ties (e.g. 1, 2, 2, 4). `DENSE_RANK()` has no gaps on ties (e.g. 1, 2, 2, 3).',
-      'Gotcha: Window functions are executed after `GROUP BY` and `HAVING`. You cannot use window functions inside the `WHERE` clause directly.'
+      'Common Interview Question: `ROW_NUMBER()` assigns sequential numbers. `RANK()` skips ranks on ties (e.g. 1, 2, 2, 4). `DENSE_RANK()` has no gaps on ties (e.g. 1, 2, 2, 3).',
+      'Common Interview Question: Window functions are executed after `GROUP BY` and `HAVING`. You cannot use window functions inside the `WHERE` clause directly.'
     ]
   },
   {
@@ -131,8 +131,8 @@ module.exports = [
       'Space Complexity: O(M) memory where M is the size of the temporary result set.'
     ],
     bullets5: [
-      'Gotcha: In older versions of PostgreSQL, CTEs acted as optimization barriers, meaning they were always materialized, which could slow queries down. Modern engines optimize them.',
-      'Gotcha: Recursive CTEs must include an anchor query, a `UNION ALL`, and a recursive query that eventually returns an empty set to prevent infinite loops.'
+      'Common Interview Question: In older versions of PostgreSQL, CTEs acted as optimization barriers, meaning they were always materialized, which could slow queries down. Modern engines optimize them.',
+      'Common Interview Question: Recursive CTEs must include an anchor query, a `UNION ALL`, and a recursive query that eventually returns an empty set to prevent infinite loops.'
     ]
   },
   {
