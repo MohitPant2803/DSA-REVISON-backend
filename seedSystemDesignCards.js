@@ -4083,7 +4083,7 @@ async function run() {
       topic: q.topic,
       difficulty: q.difficulty,
       complexity: '',
-      explanation: q.type === 'theory' ? formatBullets(q.bullets1) : `Comparison: ${q.conceptA} vs ${q.conceptB}`,
+      explanation: q.type === 'comparison' ? `Comparison: ${q.conceptA} vs ${q.conceptB}` : formatBullets(q.bullets1),
       folderId: q.folderId,
       createdBy: adminId,
       visibility: 'public',
