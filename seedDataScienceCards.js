@@ -36,21 +36,24 @@ function compileSlides(q) {
   const slides = [{ type: 'intro', headline: '', body: '', blocks: [] }];
 
   if (q.type === 'theory') {
-    slides.push({ type: 'explanation', headline: '💡 Core Concept', body: formatBullets(q.bullets1), blocks: [] });
+    const theoryBullets = q.bullets1 && q.bullets1.length > 1 ? q.bullets1.slice(1) : q.bullets1;
+    slides.push({ type: 'explanation', headline: '💡 Core Concept', body: formatBullets(theoryBullets), blocks: [] });
     slides.push({ type: 'explanation', headline: '💡 How it Works', body: formatBullets(q.bullets2), blocks: [] });
     slides.push({ type: 'explanation', headline: '🧠 Intuitive Analogy', body: formatBullets(q.bullets3), blocks: [] });
     slides.push({ type: 'explanation', headline: '🧠 Commonly Asked Questions', body: formatBullets(q.bullets4), blocks: [] });
     slides.push({ type: 'explanation', headline: '🧠 Real-world Limitations', body: formatBullets(q.bullets5), blocks: [] });
   }
   else if (q.type === 'math') {
-    slides.push({ type: 'explanation', headline: '💡 Core Theorem', body: formatBullets(q.bullets1), blocks: [] });
+    const mathBullets = q.bullets1 && q.bullets1.length > 1 ? q.bullets1.slice(1) : q.bullets1;
+    slides.push({ type: 'explanation', headline: '💡 Core Theorem', body: formatBullets(mathBullets), blocks: [] });
     slides.push({ type: 'explanation', headline: '💡 Mathematical Formula', body: formatBullets(q.bullets2), blocks: [] });
     slides.push({ type: 'explanation', headline: '🧠 Geometric Model', body: formatBullets(q.bullets3), blocks: [] });
     slides.push({ type: 'explanation', headline: '🧠 Numerical Walkthrough', body: formatBullets(q.bullets4), blocks: [] });
     slides.push({ type: 'explanation', headline: '🧠 Commonly Asked Questions', body: formatBullets(q.bullets5), blocks: [] });
   }
   else if (q.type === 'code') {
-    slides.push({ type: 'explanation', headline: '💡 Core Concept', body: formatBullets(q.bullets1), blocks: [] });
+    const codeBullets = q.bullets1 && q.bullets1.length > 1 ? q.bullets1.slice(1) : q.bullets1;
+    slides.push({ type: 'explanation', headline: '💡 Core Concept', body: formatBullets(codeBullets), blocks: [] });
     slides.push({
       type: 'code',
       headline: q.lang === 'SQL' ? 'SQL Query' : `${q.lang} Code`, // No emoji for code titles
@@ -69,7 +72,8 @@ function compileSlides(q) {
     slides.push({ type: 'explanation', headline: '🧠 Interview Scenarios', body: formatBullets(q.bullets5), blocks: [] });
   }
   else if (q.type === 'case_study') {
-    slides.push({ type: 'explanation', headline: '💡 Problem Framing', body: formatBullets(q.bullets1), blocks: [] });
+    const caseBullets = q.bullets1 && q.bullets1.length > 1 ? q.bullets1.slice(1) : q.bullets1;
+    slides.push({ type: 'explanation', headline: '💡 Problem Framing', body: formatBullets(caseBullets), blocks: [] });
     slides.push({ type: 'explanation', headline: '💡 High-Level Architecture', body: formatBullets(q.bullets2), blocks: [] });
     slides.push({ type: 'explanation', headline: '💡 Core Components', body: formatBullets(q.bullets3), blocks: [] });
     slides.push({ type: 'explanation', headline: '🧠 Scaling & Monitoring', body: formatBullets(q.bullets4), blocks: [] });
@@ -268,10 +272,8 @@ async function run() {
     let cardExplanation = '';
     if (q.type === 'comparison') {
       cardExplanation = `Comparison: ${q.conceptA} vs ${q.conceptB}`;
-    } else if (q.type === 'code') {
-      cardExplanation = q.bullets1 ? q.bullets1.join('\n\n') : '';
     } else {
-      cardExplanation = q.bullets1 ? q.bullets1.join('\n\n') : '';
+      cardExplanation = q.bullets1 && q.bullets1.length > 0 ? q.bullets1[0] : '';
     }
 
     const newCard = {

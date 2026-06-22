@@ -86,3 +86,47 @@ export const updatePushToken = asyncHandler(async (req: AuthRequest, res: Respon
 
   return res.status(401).json({ success: false, message: 'Unauthorized' });
 });
+
+export const deleteAccount = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
+  const userId = req.user._id;
+
+  console.log(`[Account Deletion] Initiating cascading purge for user ${req.user.email} (ID: ${userId})`);
+
+  // Dynamically load models to prevent circular dependency issues
+  const User = require('../models/user.model').default;
+  const Progress = require('../models/progress.model').default;
+  const UserQuestionProgress = require('../models/userQuestionProgress.model').default;
+  const Playlist = require('../models/playlist.model').default;
+  const Folder = require('../models/folder.model').default;
+  const ProcessedMutation = require('../models/processedMutation.model').default;
+  const DeletedEntity = require('../models/deletedEntity.model').default;
+  const UserCardState = require('../models/userCardState.model').default;
+  const UserReelPreference = require('../models/userReelPreference.model').default;
+  const UserReelSession = require('../models/userReelSession.model').default;
+  const FolderProgress = require('../models/folderProgress.model').default;
+  const PlaylistProgress = require('../models/playlistProgress.model').default;
+
+  // Execute deletion across all collections in parallel
+  await Promise.all([
+    User.findByIdAndDelete(userId),
+    Progress.deleteMany({ userId }),
+    UserQuestionProgress.deleteMany({ userId }),
+    Playlist.deleteMany({ userId }),
+    Folder.deleteMany({ createdBy: userId }),
+    ProcessedMutation.deleteMany({ userId }),
+    DeletedEntity.deleteMany({ userId }),
+    UserCardState.deleteMany({ userId }),
+    UserReelPreference.deleteMany({ userId }),
+    UserReelSession.deleteMany({ userId }),
+    FolderProgress.deleteMany({ userId }),
+    PlaylistProgress.deleteMany({ userId })
+  ]);
+
+  console.log(`[Account Deletion] Successfully deleted user profile and all associated data for ${req.user.email}`);
+
+  return successResponse(res, 200, 'Account deleted successfully');
+});

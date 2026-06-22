@@ -36,10 +36,11 @@ function compileSlides(q) {
   const slides = [{ type: 'intro', headline: '', body: '', blocks: [] }];
 
   if (q.type === 'theory') {
+    const theoryBullets = q.bullets1 && q.bullets1.length > 1 ? q.bullets1.slice(1) : q.bullets1;
     slides.push({
       type: 'explanation',
       headline: '💡 Core Concept',
-      body: formatBullets(q.bullets1),
+      body: formatBullets(theoryBullets),
       blocks: []
     });
     slides.push({
@@ -100,10 +101,11 @@ function compileSlides(q) {
     });
   }
   else if (q.type === 'architecture') {
+    const archBullets = q.bullets1 && q.bullets1.length > 1 ? q.bullets1.slice(1) : q.bullets1;
     slides.push({
       type: 'explanation',
       headline: '💡 Core Concept',
-      body: formatBullets(q.bullets1),
+      body: formatBullets(archBullets),
       blocks: []
     });
     slides.push({
@@ -132,10 +134,11 @@ function compileSlides(q) {
     });
   }
   else if (q.type === 'design') {
+    const designBullets = q.bullets1 && q.bullets1.length > 1 ? q.bullets1.slice(1) : q.bullets1;
     slides.push({
       type: 'explanation',
       headline: '💡 Requirements',
-      body: formatBullets(q.bullets1),
+      body: formatBullets(designBullets),
       blocks: []
     });
     slides.push({
@@ -4030,28 +4033,38 @@ async function run() {
     }
     folderCardIdsMap[q.folderId].push(cardId);
 
-    // Delete existing card to guarantee fresh updates
-    await db.collection('revisioncards').deleteOne({ _id: cardId });
+    // Determine card level explanation
+    let cardExplanation = '';
+    if (q.type === 'comparison') {
+      cardExplanation = `Comparison: ${q.conceptA} vs ${q.conceptB}`;
+    } else {
+      cardExplanation = q.bullets1 && q.bullets1.length > 0 ? q.bullets1[0] : '';
+    }
 
-    const newCard = {
-      _id: cardId,
-      title: q.title,
-      topic: q.topic,
-      difficulty: q.difficulty,
-      complexity: '',
-      explanation: q.type === 'comparison' ? `Comparison: ${q.conceptA} vs ${q.conceptB}` : formatBullets(q.bullets1),
-      folderId: q.folderId,
-      createdBy: adminId,
-      visibility: 'public',
-      order: 0,
-      isDeleted: false,
-      slides: slides,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    await db.collection('revisioncards').insertOne(newCard);
-    console.log(`✅ Seeded Card: "${q.title}" | ID: ${cardId}`);
+    await db.collection('revisioncards').updateOne(
+      { _id: cardId },
+      {
+        $set: {
+          title: q.title,
+          topic: q.topic,
+          difficulty: q.difficulty,
+          complexity: '',
+          explanation: cardExplanation,
+          folderId: q.folderId,
+          createdBy: adminId,
+          visibility: 'public',
+          order: 0,
+          isDeleted: false,
+          slides: slides,
+          updatedAt: new Date()
+        },
+        $setOnInsert: {
+          createdAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
+    console.log(`✅ Seeded/Updated Card: "${q.title}" | ID: ${cardId}`);
   }
 
   // 2. Associate cardIds inside folders collection

@@ -52,17 +52,17 @@ function formatBullets(arr) {
 
 // 11 Subfolder Definitions
 const SUBFOLDERS = [
-  { title: 'Probability', description: 'Core probability rules, independent/dependent events, addition/multiplication rules, and shortcuts.', icon: 'percent', color: '#8B5CF6', order: 1 },
-  { title: 'Conditional Probability', description: 'Bayes Theorem, medical testing problems, coin flip conditional probability, and common traps.', icon: 'filter', color: '#8B5CF6', order: 2 },
-  { title: 'Expected Value', description: 'EV calculations, fair game concepts, lottery setups, and recursive EV problems.', icon: 'trending-up', color: '#8B5CF6', order: 3 },
-  { title: 'Combinatorics', description: 'Permutations, combinations, circular arrangements, derangements, and restrictions.', icon: 'shuffle', color: '#8B5CF6', order: 4 },
-  { title: 'Counting Techniques', description: 'Inclusion-exclusion principle, stars & bars method, pigeonhole principle, and path counting.', icon: 'hash', color: '#8B5CF6', order: 5 },
-  { title: 'Game Theory', description: 'Optimal plays, winning/losing states, Nim game strategies, and minimax reasoning.', icon: 'target', color: '#8B5CF6', order: 6 },
+  { title: 'Probability', description: 'Core probability rules, independent/dependent events, addition/multiplication rules, and shortcuts.', icon: 'percent', color: '#3B82F6', order: 1 },
+  { title: 'Conditional Probability', description: 'Bayes Theorem, medical testing problems, coin flip conditional probability, and common traps.', icon: 'filter', color: '#6366F1', order: 2 },
+  { title: 'Expected Value', description: 'EV calculations, fair game concepts, lottery setups, and recursive EV problems.', icon: 'trending-up', color: '#10B981', order: 3 },
+  { title: 'Combinatorics', description: 'Permutations, combinations, circular arrangements, derangements, and restrictions.', icon: 'shuffle', color: '#F59E0B', order: 4 },
+  { title: 'Counting Techniques', description: 'Inclusion-exclusion principle, stars & bars method, pigeonhole principle, and path counting.', icon: 'hash', color: '#06B6D4', order: 5 },
+  { title: 'Game Theory', description: 'Optimal plays, winning/losing states, Nim game strategies, and minimax reasoning.', icon: 'target', color: '#F43F5E', order: 6 },
   { title: 'Logical Puzzles', description: 'Monty Hall, 100 Prisoners, Blue Eyes, Poisoned Bottle, and other classic logic puzzles.', icon: 'help-circle', color: '#8B5CF6', order: 7 },
-  { title: 'Statistics', description: 'Mean, median, mode, variance, covariance, correlation, and the Central Limit Theorem.', icon: 'bar-chart-2', color: '#8B5CF6', order: 8 },
-  { title: 'Mental Math', description: 'Fast percentage/fraction conversions, mental squares/cubes, and estimation shortcuts.', icon: 'zap', color: '#8B5CF6', order: 9 },
-  { title: 'Interview Classics', description: 'Birthday Paradox, Secretary Problem, Coupon Collector, Random Walks, and Gambler\'s Ruin.', icon: 'award', color: '#8B5CF6', order: 10 },
-  { title: 'Markov Chains', description: 'States and transition matrices, stationary distribution, and expected steps problems.', icon: 'git-commit', color: '#8B5CF6', order: 11 }
+  { title: 'Statistics', description: 'Mean, median, mode, variance, covariance, correlation, and the Central Limit Theorem.', icon: 'bar-chart-2', color: '#0D9488', order: 8 },
+  { title: 'Mental Math', description: 'Fast percentage/fraction conversions, mental squares/cubes, and estimation shortcuts.', icon: 'zap', color: '#EAB308', order: 9 },
+  { title: 'Interview Classics', description: 'Birthday Paradox, Secretary Problem, Coupon Collector, Random Walks, and Gambler\'s Ruin.', icon: 'award', color: '#0EA5E9', order: 10 },
+  { title: 'Markov Chains', description: 'States and transition matrices, stationary distribution, and expected steps problems.', icon: 'git-commit', color: '#EC4899', order: 11 }
 ];
 
 function compileSlides(q) {
