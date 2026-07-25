@@ -15,8 +15,13 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
 
     // Service handles the "Create if new / Login if existing" logic
     const user = await verifyGoogleTokenAndLogin(idToken);
-    await ensureUserSystemPlaylists(user._id.toString());
-    await logUserPlaylistCatalogSummary(user._id.toString(), user.email);
+    
+    // Defer system playlist initialization & catalog logging asynchronously to avoid response latency
+    ensureUserSystemPlaylists(user._id.toString()).then(() => {
+      logUserPlaylistCatalogSummary(user._id.toString(), user.email).catch(() => {});
+    }).catch((err) => {
+      console.error('[Auth] Background playlist initialization error:', err.message);
+    });
 
     if (deviceId) {
       user.lastDeviceId = deviceId;
