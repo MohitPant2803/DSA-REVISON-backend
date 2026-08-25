@@ -92,9 +92,8 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       ? { userId }
       : { userId, revision: { $gt: sinceRevision } };
 
-    const cardQuery = sinceRevision === 0
-      ? { isDeleted: { $ne: true } }
-      : { updatedAt: { $gt: sinceDate }, isDeleted: { $ne: true } };
+    // Always return all active revision cards with slides during sync to guarantee 100% full content hydration on every device
+    const cardQuery = { isDeleted: { $ne: true } };
 
     const [cards, folders, playlists, questionProgress, progress, deletedEntities, seniorQuotes] = await Promise.all([
       RevisionCard.find(cardQuery).lean(),
