@@ -92,8 +92,12 @@ export const handleDeltaSync = asyncHandler(async (req: AuthRequest, res: Respon
       ? { userId }
       : { userId, revision: { $gt: sinceRevision } };
 
+    const cardQuery = sinceRevision === 0
+      ? { isDeleted: { $ne: true } }
+      : { updatedAt: { $gt: sinceDate }, isDeleted: { $ne: true } };
+
     const [cards, folders, playlists, questionProgress, progress, deletedEntities, seniorQuotes] = await Promise.all([
-      RevisionCard.find({ updatedAt: { $gt: sinceDate } }).lean(),
+      RevisionCard.find(cardQuery).lean(),
       Folder.find(folderQuery).lean(),
       playlistQuery
         ? Playlist.find(playlistQuery).lean()
@@ -436,12 +440,12 @@ export const handleSyncActions = asyncHandler(async (req: AuthRequest, res: Resp
             }
 
             case 'DELETE_PLAYLIST': {
-              const { playlistId } = payload;
-              if (playlistId) {
+              const cleanId = payload.playlistId ? String(payload.playlistId).split('-loop-')[0] : null;
+              if (cleanId) {
                 const nextRev = await getNextUserRevision(userId, session);
-                await deletePlaylistService(playlistId, userId);
+                await deletePlaylistService(cleanId, userId);
                 await DeletedEntity.findOneAndUpdate(
-                  { userId, entityId: playlistId, entityType: 'playlist' },
+                  { userId, entityId: cleanId, entityType: 'playlist' },
                   { $set: { revision: nextRev, deletedAt: new Date() } },
                   { upsert: true, new: true, session }
                 );
